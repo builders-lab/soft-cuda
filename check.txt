@@ -1,0 +1,551 @@
+\n===== ./CMakeLists.txt =====
+cmake_minimum_required(VERSION 3.16)
+
+project(soft-cuda)
+
+file(GLOB_RECURSE SOURCE_FILE src/*.cpp src/*.hpp src/*.h)
+
+set(CMAKE_CXX_STANDARD 23)
+
+add_executable(soft ${SOURCE_FILE})
+
+target_include_directories(soft PRIVATE
+  "${CMAKE_CURRENT_SOURCE_DIR}/include"
+)
+\n===== ./README.md =====
+# CUDA-cores
+\n===== ./include/soft-cuda/tensor/tensor.h =====
+#pragma once
+#include <string>
+
+///////////////////////////////////////////////
+
+// Maximum number of supported dimension
+#define TENSOR_MAX_DIMS 8
+
+///////////////////////////////////////////////
+
+// Data type
+
+enum class tensor_dtype_t {
+  UINT32_T,
+  INT32_T,
+  UINT64_T,
+  INT64_T,
+  FLOAT32_T,
+  FLOAT64_T,
+};
+
+enum class device_type {
+  GPU,
+  CPU,
+};
+
+// Opaque tensor
+typedef struct tensor_instance tensor_t;
+
+// Opaque pool of tensors
+typedef struct tensor_pool_instance tensor_pool_t;
+
+// Opaque graph
+typedef struct tensor_graph_instance tensor_graph_t;
+
+///////////////////////////////////////////////
+// RETURN TENSOR INFORMATION
+
+
+/* *
+ * Return a unique identifier for the tensor
+ *
+ * @param t            The tensor
+ * @return             Return the identifier for the tensor, which will be unique across all 
+ *                     other tensors in the same memory pool
+ * */
+uint32_t tensor_id(tensor_t *t);
+
+
+
+////////////////////////////////////////////////
+// CREATE TENSOR
+
+/**
+ * Create a float64 tensor
+ *
+ * @param pool        The memory pool to use for creating the tensor operation
+ * @param dims        The shape of the tensor. Set to NULL to return a scalar
+ *                    value, or provide an array of dimensions for a tensor, with
+ *                    the last dimension followed by a zero.
+ * @param elems       The elements of the tensor. The number of elements must
+ *                    match the number of elements implied by the dimensions,
+ *                    or can be NULL to create a tensor with zero values.
+ * @return            Returns a tensor or NULL on error. Typically the error will be due
+ *                    to insufficient memory in the pool.
+ */
+
+tensor_t *tensor_create_float32(tensor_pool_t *pool, uint32_t *dims, float *elems);
+
+///////////////////////////////////////////////////////////////////////////////
+// OPERATIONS
+
+
+/*
+ * Free the tensor
+ *
+ * @param pool   Address of the tensor to free
+ *
+ * @NOTE this API will be implemented in future for now it's just a place holder
+ * We will be working with just BUMP allocator for now.
+ * */
+void tensor_free(tensor_pool_t *pool);
+
+
+/*
+ * Move the memory pool between device_type
+ *
+ * @param device       Name of the device to move the pool to. GPU/CPU
+ * */
+uint8_t move_tensor_device(tensor_t *t, device_type target_device);
+
+
+/*
+ * Do matrix multiplication
+ * @param out          Pointer to the tensor where result will be stored
+ * @param x            Pointer to the tensor which will be mulptiplied
+ * @param y            Pointer to the tensor which will be mulptiplied
+ *
+ * */
+void tensor_matmul(tensor_t *out, tensor_t *x, tensor_t *y);
+
+
+/*
+ * Do matrix transpose
+ * @param a            Pointer to the tensor which will be transposed
+ *
+ * */
+void tensor_transpose(tensor_t *out, tensor_t *a);
+
+
+/*
+ * Do matrix addition
+ * @param out          Pointer to the tensor where result will be stored
+ * @param x            Pointer to the tensor which will be added to
+ * @param y            Pointer to the tensor which will be added
+ *
+ * */
+void tensor_add(tensor_t *out, tensor_t *x, tensor_t *y);
+
+
+/*
+ * Do scalar matrix multiplication
+ * @param out          Pointer to the tensor where result will be stored
+ * @param x            Pointer to the tensor which will be mulptiplied
+ * @param y            Scalar with which the matrix will be multiplied
+ *
+ * */
+void tensor_scalar_mul(tensor_t *out, tensor_t *x, double y);
+
+// The activation function
+// @params out                     Output tensor
+// @param  a                       Input tensor
+
+void tensor_relu(tensor_t *out, tensor_t *a);
+
+// Compares result
+// return how correct we were b/w 0-1
+tensor_t* tensor_mse_loss(tensor_t *predictions, tensor_t *target);
+
+//////////////////////
+// THE BACKWARD PASS
+
+// The trigger function
+void tensor_backward(tensor_t *loss_matrix);
+
+// The Optimizer
+void tensor_sgd_template(tensor_t *m, double learning_rate);
+\n===== ./misc/add.cu =====
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+
+
+__global__
+void add(int n, float *x, float *y) {
+  int index = blockIdx.x * blockDim.x + threadIdx.x;
+  int stride = blockDim.x * gridDim.x;
+  for (int i = index; i < n ; i += stride) {
+    y[i] = x[i] + y[i];
+  }
+}
+
+int main(void) {
+  int N = 1<<20;
+  
+
+  float *x,*y;
+  cudaMallocManaged(&x, N*sizeof(float));
+  cudaMallocManaged(&y, N*sizeof(float));
+
+
+  cudaMemLocation loc = {};
+  loc.type = cudaMemLocationTypeDevice;
+  loc.id   = 0;
+
+  cudaMemPrefetchAsync(x, N*sizeof(float), loc, 0);
+  cudaMemPrefetchAsync(y, N*sizeof(float), loc, 0);
+
+  for (int i = 0; i < N; i++) {
+    x[i] = 1.0f;
+    y[i] = 2.0f;
+  }
+  
+  int blockSize = 256;
+  int numBlocks = (N + blockSize -1) / blockSize;
+  add<<<numBlocks, blockSize>>>(N,x,y);
+
+  cudaDeviceSynchronize();
+
+  float maxError = 0.0f;
+
+  for(int i = 0; i <N; i++) {
+    maxError = fmax(maxError, fabs(y[i]-3.0f));
+  }
+  
+  printf("Max Error: %f\n", maxError);
+
+  cudaFree(x);
+  cudaFree(y);
+  return 0;
+}
+\n===== ./nsys_easy.sh =====
+#!/bin/bash
+
+# This script is a wrapper around the nsys command to simplify the profiling process.
+# It allows you to specify the trace, sample, and context switch options, as well as the output and report names.
+# The script will run the nsys profile command and then the nsys stats command.
+# Usage: nsys_easy.sh [-t trace] [-s sample] [-c ctxsw] [-o output] [-r report] command
+# Example: nsys_easy.sh -t cuda,osrt -s none -c none -o nsys_easy -r cuda_gpu_kernel_sum ./my_program
+# The above command will profile the my_program executable with the specified options and output files.
+#
+# By default the script only traces CUDA API calls, but you can specify additional options to trace other events.
+# The script runs the cuda_gpu_sum report by default, which combines Kernel and CUDA memory copy statistics.
+# The goal is for the script to act similar to the nvprof command, but with the added flexibility of the NVIDIA Nsight Systems tool.
+
+# Default values
+trace="--trace=cuda"
+sample="--sample=none"
+ctxsw="--cpuctxsw=none"
+output="nsys_easy"
+report="cuda_gpu_sum"
+
+# Usage function
+usage() {
+    echo "Usage: $0 [-t trace] [-s sample] [-c ctxsw] [-o output] [-r report]"
+    echo "  -t trace   : Set the trace option (default: --trace=cuda)"
+    echo "  -s sample  : Set the sample option (default: --sample=none)"
+    echo "  -c ctxsw   : Set the context switch option (default: --cpuctxsw=none)"
+    echo "  -o output  : Set the output file name (default: nsys_easy)"
+    echo "  -r report  : Set the report name (default: cuda_gpu_sum)"
+    exit 1
+}
+
+# Parse command line options
+while getopts "t:s:c:o:r:" opt; do
+    case $opt in
+        t) trace="--trace=$OPTARG" ;;
+        s) sample="--sample=$OPTARG" ;;
+        c) ctxsw="--cpuctxsw=$OPTARG" ;;
+        o) output="$OPTARG" ;;
+        r) report="$OPTARG" ;;
+        \?) usage ;;
+    esac
+done
+
+# Shift the processed options away
+shift $((OPTIND -1))
+
+# Run the nsys profile command
+nsys profile $trace $sample $ctxsw --force-overwrite=true -o $output "$@"
+
+# Run the nsys stats command
+nsys stats --force-export=true -r $report $output.nsys-rep
+\n===== ./src/backend_cpu/base/debug.cpp =====
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdarg.h>
+#include "internal_header.h"
+
+
+////////////////////
+// PUBLIC METHODS
+
+// Print expression and panic
+
+void tensor_panic(const char* file, int line, const char *expr) {
+    fprintf(stderr, "PANIC: %s:%d %s\n", file, line, expr);
+    abort();
+}
+
+// Print a debug message
+void tensor_printf(const char *file, int line, const char *fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    va_end(args);
+    fprintf(stderr, "%s:%d: \n", file, line);
+    vfprintf(stderr, fmt, args);
+}
+\n===== ./src/backend_cpu/include/debug.h =====
+#ifndef DEBUG_H
+#define DEBUG_H
+
+void tensor_panic(const char* file, int line, const char *expr);
+void tensor_printf(const char *file, int line, const char *fmt, ...);
+
+#ifdef assert
+#undef assert
+#endif
+
+#ifndef NDEBUG
+#define debug(...) \
+    tensor_printf(__FILE__, __LINE__, __VA_ARGS__)
+#define assert(e) \
+    ((void)(e) ? 0 : tensor_panic(__FILE__, __LINE__, #e))
+#else
+#define tensor_debug(...)
+#define assert(e)
+#endif // !NDEBUG
+
+
+
+#endif // !DEBUG_H
+\n===== ./src/backend_cpu/include/mul.h =====
+#ifndef TENSOR_MUL_H
+#define TENSOR_MUL_H
+
+// Multiply a and b where they are the same type, and b is a scalar value.
+bool tensor_mul_op_scalar(tensor_pool_t *pool, tensor_t *t);
+
+// Multiply a and b where they are the same type and dimension.
+bool tensor_mul_op_matrix(tensor_pool_t *pool, tensor_t *t);
+
+inline bool tensor_is_scalar(tensor_t *t);
+#endif //  TENSOR_MUL_H
+\n===== ./src/backend_cpu/include/scalar.h =====
+#pragma once
+
+inline float tensor_float32_value(tensor_t *t);
+\n===== ./src/backend_cpu/math/mul.cpp =====
+#include "internal_header.h"
+
+// TODO: multi-dtype support, see tensor_dtype_sizeof
+// for now everything is float32
+
+
+/////////////////////////////////////////////////////
+// PRIVATE METHODS
+
+inline bool tensor_is_scalar(tensor_t *t) {
+    assert(t!= NULL);
+    return t->ndims == 0;
+}
+
+static tensor_t *tensor_mul_scalar(tensor_pool_t *pool, tensor_t *a, tensor_t *b) {
+    assert(pool != NULL);
+    assert(a != NULL);
+    assert(b != NULL);
+
+    // Create a new tensor with same dimension
+    tensor_t *t = tensor_dtype_create(pool, a->dtype, a->dims, NULL);
+    if(t == NULL) {
+        return NULL;
+    }
+
+    // Set the operation to MUL_SCALAR, and dependencies to a and b.
+    t->op = tensor_op_t::MUL_SCALAR;
+    t->a = a;
+    t->b = b;
+
+    return t;
+}
+
+/////////////////////////////////////////////////////////////////
+// PUBLIC METHODS
+
+tensor_t *tensor_mul(tensor_pool_t *pool, tensor_t *a, tensor_t *b) {
+    assert(pool != NULL);
+    assert(a != NULL);
+    assert(b != NULL);
+
+    if (a -> dtype != b -> dtype) {
+        debug("tensor_mul: tensors do not have same number of dimensions\n");
+        return NULL;
+    }
+
+    // Check for scalar values
+    if (tensor_is_scalar(a)) {
+        return tensor_mul_scalar(pool, b, a);
+    }
+
+    if (tensor_is_scalar(b)) {
+        return tensor_mul_scalar(pool, a, b);
+    }
+
+    // Check for same number of dimensions
+    if (a -> ndims != b-> ndims) {
+        debug("tensor_mul: tensors do not have same number of dimensions\n");
+        return NULL;
+    }
+
+    // Check for same dimension
+    for (uint8_t i = 0; i < a->ndims; i++) {
+        if (a->dims[i] != b->dims[i]) {
+            debug("tensor_mul: tensors do not have same shape\n");
+            return NULL;
+        }
+    }
+
+    tensor_t *t = tensor_dtype_create(pool, a->dtype, a->dims, NULL);
+    if(t == NULL) {
+        return NULL;
+    }
+
+    t->op = tensor_op_t::MUL_MATRIX;
+    t->a = a;
+    t->b = b;
+
+    return t;
+}
+
+
+
+static bool tensor_mul_op_scalar_float32(float *data, uint32_t nvalues, float b) {
+    for (uint32_t i = 0; i < nvalues; i++) {
+        data[i] *=b;
+    }
+    return true;
+}
+
+
+
+/////////////////////////////////////////////////////////////////////////////////
+// PUBLIC METHODS - EVALUATE
+
+bool tensor_mul_op_scalar(tensor_pool_t *pool, tensor_t *t) {
+    assert(pool != NULL);
+    assert(t != NULL);
+    assert(t->a != NULL);
+    assert(t->b != NULL);
+    assert(t->dtype == t->a->dtype && t->a->dtype == t->b->dtype);
+    assert(tensor_is_scalar(t->b));
+    switch (t->dtype)
+    {
+      case tensor_dtype_t::INT32_T:
+      case tensor_dtype_t::UINT32_T: 
+      case tensor_dtype_t::INT64_T: 
+      case tensor_dtype_t::UINT64_T: 
+      case tensor_dtype_t::FLOAT32_T: 
+            return  tensor_mul_op_scalar_float32((float *)t->a->data, t->a->nvalues, tensor_float32_value(t->b));
+      case tensor_dtype_t::FLOAT64_T: 
+    }
+}
+
+
+bool tensor_mul_op_matrix(tensor_pool_t *pool, tensor_t *t) {
+    // TODO: Implement matrix multiplication
+    return false;
+}
+\n===== ./src/backend_cpu/math/scalar.cpp =====
+#include <stdlib.h>
+#include "string.h"
+#include "internal_header.h"
+
+
+/////////////////////////////////////////////////
+// PUBLIC METHODS - GET VALUE
+// Return a scalar value(tensor?) with the value of the tensor
+
+inline float tensor_float32_value(tensor_t *t) {
+    assert(t != NULL);
+    assert(t->dtype == tensor_dtype_t::FLOAT32_T);
+    assert(tensor_is_scalar(t));
+    return *((float *)t->data);
+}
+
+
+\n===== ./src/core/include/tensor/tensor.h =====
+#ifndef PRIVATE_TENSOR_H
+#define PRIVATE_TENSOR_H
+
+enum class tensor_op_t {
+    NONE = 0,
+    CAST,         // Cast to a new dtype
+    MUL_SCALAR,   // Multiply a by scalar b
+    MUL_MATRIX,   // Multiply a by b
+};
+
+struct tensor_instance {
+    
+    tensor_dtype_t dtype;
+    
+    // Np. of dimension and values
+    uint8_t ndims;
+    uint32_t nvalues;
+
+    // Number of element in each dimension
+    uint32_t dims[TENSOR_MAX_DIMS + 1];
+    
+    uint32_t stride[TENSOR_MAX_DIMS];
+    
+    // Data
+    void *data;
+
+    // Operation and arguments
+    tensor_op_t op;
+    tensor_t *a;
+    tensor_t *b;
+    
+    // ID and name
+    uint32_t id;
+    
+    // Tensor aware of it's postion could be useful
+    device_type device; 
+    
+    // If autograd is required
+    bool grad_compute;
+    // For storing autograd result
+    tensor_t *grad;
+};
+
+// Create a new tensor with given data type and dimensions. If dims is NULL then
+// a scalar is created. If elems is NULL then the tensor is created with zeros.
+// If elems is not NULL then it is assigned as initial values.
+tensor_t *tensor_dtype_create(tensor_pool_t *pool, tensor_dtype_t dtype, uint32_t *dims, void *elems);
+
+
+
+// Evaluate the tensor, return true on success
+bool tensor_evaluate(tensor_pool_t *pool, tensor_t *t);
+
+// Return the data type size
+size_t tensor_dtype_sizeof(tensor_dtype_t dtype);
+
+
+
+#endif // !PRIVATE_TENSOR_H
+\n===== ./src/core/tensor/tensor.cpp =====
+#include <iostream>
+
+
+int tensor() {
+
+}
+\n===== ./src/internal_header.h =====
+// PUBLIC DECLARATIONS
+#include "../include/soft-cuda/tensor/tensor.h"
+
+
+// PRIVATE DECLARATIONS
+#include "backend_cpu/include/debug.h"
+#include "backend_cpu/include/mul.h"
+#include "backend_cpu/include/scalar.h"
+
+\n===== ./src/main.cpp =====
