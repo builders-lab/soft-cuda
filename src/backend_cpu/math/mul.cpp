@@ -7,11 +7,6 @@
 /////////////////////////////////////////////////////
 // PRIVATE METHODS
 
-inline bool tensor_is_scalar(tensor_t *t) {
-    assert(t!= NULL);
-    return t->ndims == 0;
-}
-
 static tensor_t *tensor_mul_scalar(tensor_pool_t *pool, tensor_t *a, tensor_t *b) {
     assert(pool != NULL);
     assert(a != NULL);
@@ -81,9 +76,9 @@ tensor_t *tensor_mul(tensor_pool_t *pool, tensor_t *a, tensor_t *b) {
 
 
 
-static bool tensor_mul_op_scalar_float32(float *data, uint32_t nvalues, float b) {
+static bool tensor_mul_op_scalar_float32(float *out, float *in, uint32_t nvalues, float b) {
     for (uint32_t i = 0; i < nvalues; i++) {
-        data[i] *=b;
+        out[i] =in[i] * b;
     }
     return true;
 }
@@ -107,8 +102,10 @@ bool tensor_mul_op_scalar(tensor_pool_t *pool, tensor_t *t) {
       case tensor_dtype_t::INT64_T: 
       case tensor_dtype_t::UINT64_T: 
       case tensor_dtype_t::FLOAT32_T: 
-            return  tensor_mul_op_scalar_float32((float *)t->a->data, t->a->nvalues, tensor_float32_value(t->b));
+            return  tensor_mul_op_scalar_float32((float *)t->data,(float *)t->a->data, t->a->nvalues, tensor_float32_value(t->b));
       case tensor_dtype_t::FLOAT64_T: 
+      default:
+            return false;
     }
 }
 

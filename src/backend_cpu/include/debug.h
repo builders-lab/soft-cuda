@@ -12,7 +12,8 @@ void tensor_printf(const char *file, int line, const char *fmt, ...);
 #define debug(...) \
     tensor_printf(__FILE__, __LINE__, __VA_ARGS__)
 #define assert(e) \
-    ((void)(e) ? 0 : tensor_panic(__FILE__, __LINE__, #e))
+    do { if (!(e)) tensor_panic(__FILE__, __LINE__, #e); } while(0)
+    // ((void)(e) ? 0 : tensor_panic(__FILE__, __LINE__, #e))
 #else
 #define tensor_debug(...)
 #define assert(e)

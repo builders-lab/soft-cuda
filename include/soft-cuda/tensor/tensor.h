@@ -1,6 +1,6 @@
 #pragma once
 #include <string>
-
+#include <cstdint> 
 ///////////////////////////////////////////////
 
 // Maximum number of supported dimension
@@ -91,15 +91,11 @@ tensor_pool_t* tensor_pool_create(size_t capacity_bytes);
  *
  * @NOTE this API will be implemented in future for now it's just a place holder
  * We will be working with just BUMP allocator for now.
-<<<<<<< HEAD
  *
  * Instantly invalidates all tensors in the pool by resetting the bump pointer to zero.
  * Does NOT return memory to the OS. Highly efficient for the training loop.
  */
 void tensor_pool_reset(tensor_pool_t *pool);
-=======
- * */
->>>>>>> 3cac4a4 (feat : Added bare bones structure for scalar multiply for float32)
 
 /*
  * Completely destroys the arena and returns the memory to the system.

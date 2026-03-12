@@ -15,7 +15,7 @@
 //     uint32_t nallocs;
 //     void *mem;
 // };
-tensor_pool_t *tensor_pool_create(uint32_t memsize) {
+tensor_pool_t *tensor_pool_create(size_t memsize) {
     assert(memsize);
 
     tensor_pool_t *pool = (tensor_pool_t *)malloc(sizeof(tensor_pool_t));

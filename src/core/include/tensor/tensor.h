@@ -1,8 +1,8 @@
 #ifndef PRIVATE_TENSOR_H
 #define PRIVATE_TENSOR_H
-
+#include <cstdint> 
 enum class tensor_op_t {
-    NONE = 0,
+    NONE,
     CAST,         // Cast to a new dtype
     MUL_SCALAR,   // Multiply a by scalar b
     MUL_MATRIX,   // Multiply a by b
@@ -55,5 +55,9 @@ bool tensor_evaluate(tensor_pool_t *pool, tensor_t *t);
 size_t tensor_dtype_sizeof(tensor_dtype_t dtype);
 
 
+size_t tensor_dtype_sizeof(tensor_dtype_t dtype);
 
+tensor_t *tensor_dtype_create(tensor_pool_t *pool, tensor_dtype_t dtype, uint32_t *dims, void *elems);
+
+bool tensor_evaluate(tensor_pool_t *pool, tensor_t *t);
 #endif // !PRIVATE_TENSOR_H
