@@ -3,9 +3,10 @@ name: Core Engine CI Tests
 # Yeh workflow tab chalega jab koi 'feat/tensor' branch par push ya pull request karega
 on:
   push:
-    branches: [ "feat/tensor", "main" ]
+    branches: [ "feat/tensor", "main", "test/ci-setup" ]
   pull_request:
     branches: [ "feat/tensor", "main" ]
+  workflow_dispatch:
 
 jobs:
   build-and-test:
