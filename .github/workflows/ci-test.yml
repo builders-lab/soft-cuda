@@ -10,7 +10,7 @@ on:
 
 jobs:
   build-and-test:
-    [cite_start]runs-on: ubuntu-latest # Kyunki project Linux (Ubuntu/Arch) par based hai 
+    runs-on: ubuntu-latest # Kyunki project Linux (Ubuntu/Arch) par based hai 
 
     steps:
     - name: Checkout Code
