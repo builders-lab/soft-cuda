@@ -1,5 +1,5 @@
 // PUBLIC DECLARATIONS
-#include "../include/soft-cuda/tensor/tensor.h"
+#include "../include/soft-cuda/tensor/api.h"
 
 
 // PRIVATE DECLARATIONS

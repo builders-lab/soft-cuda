@@ -3,18 +3,8 @@
 
 
 #define TENSOR_POOL_ALIGN 8
-// TODO: tensor pool destroy
-// TODO: tensor pool alloc
-// TODO: tensor pool size
-// TODO: tensor pool used
-// TODO: tensor pool remaining
-//
-// struct tensor_pool_instance {
-//     size_t memsize;
-//     size_t memused;
-//     uint32_t nallocs;
-//     void *mem;
-// };
+
+// Creates a continuous pool of memory using bump allocator pattern
 tensor_pool_t *tensor_pool_create(size_t memsize) {
     assert(memsize);
 
@@ -78,13 +68,13 @@ void *tensor_pool_alloc(tensor_pool_t *pool, size_t size, uint32_t *id) {
 }
 
 // Return size of memory pool
-inline size_t tensor_pool_size(tensor_pool_t *pool) {
+size_t tensor_pool_size(tensor_pool_t *pool) {
     assert(pool);
     return pool->memsize;
 }
 
 // Return used bytes of memory pool
-inline size_t tensor_pool_used(tensor_pool_t *pool) {
+size_t tensor_pool_used(tensor_pool_t *pool) {
     assert(pool);
     return pool->memused;
 }

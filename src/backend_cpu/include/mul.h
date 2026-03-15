@@ -14,5 +14,4 @@ inline bool tensor_is_scalar(tensor_t *t) {
 
 tensor_t *tensor_mul(tensor_pool_t *pool, tensor_t *a, tensor_t *b);
 
-inline bool tensor_is_scalar(tensor_t *t);
 #endif //  TENSOR_MUL_H
