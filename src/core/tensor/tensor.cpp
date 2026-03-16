@@ -104,7 +104,7 @@ tensor_t *tensor_dtype_create(tensor_pool_t *pool, tensor_dtype_t dtype, uint32_
 
 
 // Create float32 tensor
-inline tensor_t *tensor_create(tensor_pool_t *pool,tensor_dtype_t dtype, uint32_t num_dims ,uint32_t *dims, float *elems) {
+inline tensor_t *tensor_create(tensor_pool_t *pool,tensor_dtype_t dtype, uint32_t num_dims ,uint32_t *dims, void *elems) {
     return tensor_dtype_create(pool, dtype, dims, elems);
     // TODO: Handle num_dims to proccede with stride logic
 }
