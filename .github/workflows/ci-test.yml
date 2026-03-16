@@ -3,9 +3,9 @@ name: Core Engine CI Tests
 # Yeh workflow tab chalega jab koi 'feat/tensor' branch par push ya pull request karega
 on:
   push:
-    branches: [ "feat/tensor", "main", "test/ci-setup" ]
+    branches: [ "main", "test/ci-setup" ]
   pull_request:
-    branches: [ "feat/tensor", "main" ]
+    branches: [ "main" ]
   workflow_dispatch:
 
 jobs:
@@ -29,6 +29,17 @@ jobs:
       # Code ko compile karega 
       run: cmake --build build
 
+    - name: List Discovered Tests
+      run: cd build && ctest --show-only
+
     - name: Run Unit Tests
       # Agar tumne CTest use kiya hai, toh yeh saare tests run karega
-      run: cd build && ctest --output-on-failure
+      run: cd build && ctest --output-on-failure --verbose -j2
+    
+     - name: Upload Test Results
+       if: always()
+       uses: actions/upload-artifact@v4
+       with:
+         name: test-results
+         path: build/Testing/
+         retention-days: 7
