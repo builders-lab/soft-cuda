@@ -1,7 +1,2 @@
 To github.com:builders-lab/soft-cuda.git
- ! [rejected]        feat/matmul -> feat/matmul (non-fast-forward)
-error: failed to push some refs to 'github.com:builders-lab/soft-cuda.git'
-hint: Updates were rejected because the tip of your current branch is behind
-hint: its remote counterpart. If you want to integrate the remote changes,
-hint: use 'git pull' before pushing again.
-hint: See the 'Note about fast-forwards' in 'git push --help' for details.
+   512d19a..deb1883  feat/matmul -> feat/matmul
