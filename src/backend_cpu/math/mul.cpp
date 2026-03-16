@@ -35,7 +35,7 @@ tensor_t *tensor_mul(tensor_pool_t *pool, tensor_t *a, tensor_t *b) {
     assert(b != NULL);
 
     if (a -> dtype != b -> dtype) {
-        debug("tensor_mul: tensors do not have same number of dimensions\n");
+        debug("tensor_mul: tensors do not have similar datatype\n");
         return NULL;
     }
 
@@ -53,19 +53,26 @@ tensor_t *tensor_mul(tensor_pool_t *pool, tensor_t *a, tensor_t *b) {
         debug("tensor_mul: tensors do not have same number of dimensions\n");
         return NULL;
     }
+    assert(a->ndims == 2);
 
-    // Check for same dimension
-    for (uint8_t i = 0; i < a->ndims; i++) {
-        if (a->dims[i] != b->dims[i]) {
-            debug("tensor_mul: tensors do not have same shape\n");
-            return NULL;
-        }
+    uint32_t matrix_mul_shape_placeholder[TENSOR_MAX_DIMS] = {};
+    uint32_t *matrix_mul_shape;
+    if(b->is_transposed) {
+        debug("status of is_transposed=%d", b->is_transposed);
+        assert(a->dims[1] == b->dims[1]);
+        matrix_mul_shape_placeholder[0] = a->dims[0];
+        matrix_mul_shape_placeholder[1] = b->dims[0];
+        matrix_mul_shape = matrix_mul_shape_placeholder;
+    } else {
+        assert(a->dims[1] == b->dims[0]);
+        matrix_mul_shape_placeholder[0] = a->dims[0];
+        matrix_mul_shape_placeholder[1] = b->dims[1];
+        matrix_mul_shape = matrix_mul_shape_placeholder;
     }
-
-    tensor_t *t = tensor_dtype_create(pool, a->dtype, a->ndims, a->dims, NULL);
+    tensor_t *t = tensor_dtype_create(pool, a->dtype, a->ndims, matrix_mul_shape, NULL);
     if(t == NULL) {
         return NULL;
-    }
+     }
 
     t->op = tensor_op_t::MUL_MATRIX;
     t->a = a;
@@ -97,7 +104,7 @@ bool tensor_mul_op_scalar(tensor_pool_t *pool, tensor_t *t) {
     switch (t->dtype)
     {
       case tensor_dtype_t::INT32_T:
-      case tensor_dtype_t::UINT32_T: 
+      case tensor_dtype_t::UINT32_T:
       case tensor_dtype_t::INT64_T: 
       case tensor_dtype_t::UINT64_T: 
       case tensor_dtype_t::FLOAT32_T: 
@@ -109,9 +116,35 @@ bool tensor_mul_op_scalar(tensor_pool_t *pool, tensor_t *t) {
 }
 
 
-bool tensor_mul_op_matrix([[maybe_unused]]tensor_pool_t *pool, [[maybe_unused]]tensor_t *t) {
+// here the t->b is promised to be a transposed matrix.
+bool tensor_mul_op_matrix(tensor_pool_t *pool, tensor_t *t) {
     // TODO: Implement matrix multiplication
-    return false;
+    assert(pool != NULL);
+    assert(t != NULL);
+    if(t->b->is_transposed == false) {
+        assert(t->a->dims[1] == t->b->dims[0]);
+        return tensor_mul_op_matrix_naive(pool, t);  
+    }
+    uint32_t row = t->a->dims[0];
+
+    assert(t->a->dims[1] == t->b->dims[1]);
+    // B is transposed: dims[0] is original cols = output cols
+    uint32_t col = t->b->dims[0];
+    uint32_t kdim = t->a->dims[1];
+    float *src1 = (float *)t->a->data;
+    float *src2 = (float *)t->b->data;
+    float *des  = (float *)t->data;
+    for(uint32_t i = 0; i < row; i++) {
+        for(uint32_t j = 0; j < col; j++) {
+            float msum = 0.0f;
+            for(uint32_t k = 0; k < kdim; k++) {
+                msum += src1[i*kdim + k] * src2[j*kdim + k];
+            }
+            des[i*col+j] = msum;
+        }
+    }
+    
+    return true;
 }
 
 tensor_t* tensor_mul_naive(tensor_pool_t *pool, tensor_t *a, tensor_t *b) {
@@ -124,16 +157,11 @@ tensor_t* tensor_mul_naive(tensor_pool_t *pool, tensor_t *a, tensor_t *b) {
         debug("tensor_mul: tensors do not have same number of dimensions\n");
         return NULL;
     }
-
-    // Check for same dimension
-    for (uint8_t i = 0; i < a->ndims; i++) {
-        if (a->dims[i] != b->dims[i]) {
-            debug("tensor_mul: tensors do not have same shape\n");
-            return NULL;
-        }
-    }
-    
-    tensor_t *t = tensor_dtype_create(pool, a->dtype, a->ndims, a->dims, NULL);
+    assert(a->ndims == 2);
+    assert(a->dims[1] == b->dims[0]);
+     
+    uint32_t matrix_mul_shape[] = {a->dims[0], b->dims[1]};
+    tensor_t *t = tensor_dtype_create(pool, a->dtype, a->ndims, matrix_mul_shape, NULL);
     if(t == NULL) {
         return NULL;
     }
@@ -145,4 +173,25 @@ tensor_t* tensor_mul_naive(tensor_pool_t *pool, tensor_t *a, tensor_t *b) {
     return t;
 }
 
+
+bool tensor_mul_op_matrix_naive(tensor_pool_t *pool, tensor_t *t) {
+    assert(pool != NULL);
+    assert(t != NULL);
+    uint32_t row = t->a->dims[0];
+    uint32_t col = t->b->dims[1];
+    uint32_t kdim = t->a->dims[1];
+    float *src1 = (float *)t->a->data;
+    float *src2 = (float *)t->b->data;
+    float *des = (float *)t->data;
+    for (uint32_t i = 0 ; i < row; i ++) {
+        for(uint32_t j = 0; j < col; j++) {
+            float msum = 0.0f;
+            for(uint32_t k = 0; k < kdim; k++) {
+                msum += src1[i*kdim + k] * src2[k*col + j];
+            }
+            des[i*col+j] = msum;
+        }
+    }
+    return true;
+}
 

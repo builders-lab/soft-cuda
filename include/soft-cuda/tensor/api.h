@@ -151,6 +151,9 @@ void tensor_print_data(tensor_t *t);
  * @param x            Pointer to the tensor which will be mulptiplied
  * @param y            Pointer to the tensor which will be mulptiplied
  * @return             Returns a tensor object with operation set.
+ *
+ * @Note               tensor_matmul expects B to be transposed and 
+ *                     contiguous. Call tensor_transpose(B) first.
  * */
 tensor_t* tensor_mul(tensor_pool_t *pool, tensor_t *x, tensor_t *y);
 

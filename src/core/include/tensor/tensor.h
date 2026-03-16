@@ -40,6 +40,9 @@ struct tensor_instance {
     
     // If autograd is required
     bool grad_compute;
+
+    // If tensor is transposed
+    bool is_transposed;
     // For storing autograd result
     tensor_t *grad;
 };

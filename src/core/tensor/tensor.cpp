@@ -94,7 +94,7 @@ tensor_t *tensor_dtype_create(tensor_pool_t *pool, tensor_dtype_t dtype,uint32_t
 
     t->device = device_type::CPU;
     t->grad_compute = false;
-
+    t->is_transposed = false;
     // Return success
     return t;
 }
@@ -166,7 +166,8 @@ void tensor_print_data(tensor_t *t) {
     for(uint32_t i = 0; i < t->dims[0]; i++) {
         for(uint32_t j = 0; j < t->dims[1]; j++) {
             uint32_t index = i*t->dims[0] + j;
-            std::cout << ((float*)t->data)[index] << "\n";
+            std::cout << ((float*)t->data)[index] << " ";
         }
+        std::cout << "\n";
     }
 }
