@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <cstdint> 
+
 ///////////////////////////////////////////////
 
 // Maximum number of supported dimension
@@ -117,8 +118,29 @@ size_t tensor_pool_used(tensor_pool_t *pool);
  * @pool               Pool where the tensor will be allocated
  * */
 
-bool move_tensor_device(tensor_t *t, device_type target_device, tensor_pool_t *pool);
+bool tensor_move_device(tensor_t *t, device_type target_device, tensor_pool_t *pool);
 
+
+/*
+ * Fetches the data of the tensor.
+ * @return           Returns a void pointer to the array
+ * */
+void* tensor_get_data(tensor_t *t);
+
+/*
+ * @return returns the dimension of the tensor
+ * */
+uint8_t tensor_get_ndims(tensor_t *t);
+
+/*
+ * Get the dimension of the tensor
+ * */
+uint32_t* tensor_get_dims(tensor_t *t);
+
+/*
+ * Print the tensor data
+ * */
+void tensor_print_data(tensor_t *t);
 
 /*
  * Do cache optimized matrix multplication multiplication
@@ -254,3 +276,5 @@ bool tensor_graph_forward_evaluate(tensor_graph_t *g);
  * @return            boolean status flag
  * */
 bool tensor_graph_backward_evaluate(tensor_graph_t *g);
+
+//////////////////////////////////////////////////////////////////////////

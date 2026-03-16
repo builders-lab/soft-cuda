@@ -1,5 +1,6 @@
 // PUBLIC DECLARATIONS
 #include "../include/soft-cuda/tensor/api.h"
+#include "../include/soft-cuda/tensor/debug_api.h"
 
 
 // PRIVATE DECLARATIONS
@@ -7,4 +8,5 @@
 #include "./core/include/pool/pool.h"
 #include "backend_cpu/include/debug.h"
 #include "backend_cpu/include/mul.h"
+#include "backend_cpu/include/transpose.h"
 #include "backend_cpu/include/scalar.h"

@@ -1,6 +1,7 @@
 #include "internal_header.h"
 #include "stdlib.h"
 #include "string.h"
+#include <iostream>
 
 // #define buf_size 80
 // static char buf[buf_size];
@@ -30,24 +31,20 @@ size_t tensor_dtype_sizeof(tensor_dtype_t dtype) {
 }
 
 
-tensor_t *tensor_dtype_create(tensor_pool_t *pool, tensor_dtype_t dtype, uint32_t *dims, void *elems) {
+tensor_t *tensor_dtype_create(tensor_pool_t *pool, tensor_dtype_t dtype,uint32_t ndims, uint32_t *dims, void *elems) {
     assert(pool != NULL);
     assert(tensor_dtype_sizeof(dtype) > 0);
 
     // Check for scalar
-    size_t size = 0;
-    int ndims = -1;
-    if(dims == NULL || dims[0] == 0) {
-        size = 1;
-        ndims = 0;
-    } else {
-        while (dims[++ndims] != 0) {
-            if (size == 0) {
-                size = dims[ndims];
-            } else {
-                size *=dims[ndims];
-            }
-        }
+    size_t size = 1;
+    
+    if (ndims > TENSOR_MAX_DIMS) {
+        debug("tensor_dtype_create: failed, ndims=%zu\n", ndims);
+        return NULL;
+    }
+   
+    for(int i = 0; i < (int)ndims; i++) {
+        size *=dims[i];
     }
 
     assert(size <= UINT32_MAX);
@@ -55,12 +52,6 @@ tensor_t *tensor_dtype_create(tensor_pool_t *pool, tensor_dtype_t dtype, uint32_
     // If no size, return NULL
     if (size == 0) {
         debug("tensor_dtype_create: failed, zero size.\n");
-        return NULL;
-    }
-
-    // Retrun NULL if no dim or too many dim
-    if (ndims > TENSOR_MAX_DIMS) {
-        debug("tensor_dtype_create: failed, ndims=%zu\n", ndims);
         return NULL;
     }
     
@@ -86,11 +77,17 @@ tensor_t *tensor_dtype_create(tensor_pool_t *pool, tensor_dtype_t dtype, uint32_
     //set tensor properties
     t->dtype = dtype;
     t->ndims = (uint8_t)ndims;
-    t->nvalues = size;
-    for (uint8_t i = 0; i < ndims; i++) {
+    t->nvalues = (uint32_t)size;
+    for (uint8_t i = 0; i < (uint8_t)ndims; i++) {
         t->dims[i] = dims[i];
     }
     // TODO: Implement the stride logic
+    if(ndims > 0) {
+        t->stride[ndims-1] = 1;
+        for(int8_t i = ((int8_t)ndims) - 2; i >= 0; i--) {
+            t->stride[i] = t->dims[i+1] * t->stride[i+1];
+        }
+    }
     t->dims[ndims] = 0;
     t->op = tensor_op_t::NONE;
     t->id = id;
@@ -104,9 +101,8 @@ tensor_t *tensor_dtype_create(tensor_pool_t *pool, tensor_dtype_t dtype, uint32_
 
 
 // Create float32 tensor
-inline tensor_t *tensor_create(tensor_pool_t *pool,tensor_dtype_t dtype, uint32_t num_dims ,uint32_t *dims, void *elems) {
-    return tensor_dtype_create(pool, dtype, dims, elems);
-    // TODO: Handle num_dims to proccede with stride logic
+tensor_t *tensor_create(tensor_pool_t *pool,tensor_dtype_t dtype, uint32_t num_dims ,uint32_t *dims, void *elems) {
+    return tensor_dtype_create(pool, dtype, num_dims, dims, elems);
 }
 
 bool tensor_evaluate(tensor_pool_t *pool, tensor_t *t) {
@@ -133,9 +129,18 @@ bool tensor_evaluate(tensor_pool_t *pool, tensor_t *t) {
             assert(t->a->dtype == t->b->dtype);
             success = tensor_mul_op_scalar(pool,t);
             break;
+        case tensor_op_t::TRANSPOSE:
+            assert(t->a != NULL);
+            success = tensor_tranpose_op_matrix(pool,t); 
+            break;
+         case tensor_op_t::NAIVE_MATRIX_MUL:
+            assert(t->a != NULL);
+            assert(t->b != NULL);
+            assert(t->a->dtype == t->b->dtype);
+            success = tensor_mul_op_scalar(pool,t);
+            break;
         default:
             assert(false);
-
     }
     if (success) {
         debug("tensor_evaluate: success\n");
@@ -145,3 +150,23 @@ bool tensor_evaluate(tensor_pool_t *pool, tensor_t *t) {
     return success;
 }
 
+void* tensor_get_data(tensor_t *t) {
+    return t->data;
+}
+
+uint8_t tensor_get_ndims(tensor_t *t) {
+    return t->ndims;
+}
+
+uint32_t* tensor_get_dims(tensor_t *t) {
+    return t->dims;
+}
+
+void tensor_print_data(tensor_t *t) {
+    for(uint32_t i = 0; i < t->dims[0]; i++) {
+        for(uint32_t j = 0; j < t->dims[1]; j++) {
+            uint32_t index = i*t->dims[0] + j;
+            std::cout << ((float*)t->data)[index] << "\n";
+        }
+    }
+}

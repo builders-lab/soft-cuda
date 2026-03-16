@@ -13,7 +13,7 @@ static tensor_t *tensor_mul_scalar(tensor_pool_t *pool, tensor_t *a, tensor_t *b
     assert(b != NULL);
 
     // Create a new tensor with same dimension
-    tensor_t *t = tensor_dtype_create(pool, a->dtype, a->dims, NULL);
+    tensor_t *t = tensor_dtype_create(pool, a->dtype, a->ndims, a->dims, NULL);
     if(t == NULL) {
         return NULL;
     }
@@ -62,7 +62,7 @@ tensor_t *tensor_mul(tensor_pool_t *pool, tensor_t *a, tensor_t *b) {
         }
     }
 
-    tensor_t *t = tensor_dtype_create(pool, a->dtype, a->dims, NULL);
+    tensor_t *t = tensor_dtype_create(pool, a->dtype, a->ndims, a->dims, NULL);
     if(t == NULL) {
         return NULL;
     }
@@ -73,7 +73,6 @@ tensor_t *tensor_mul(tensor_pool_t *pool, tensor_t *a, tensor_t *b) {
 
     return t;
 }
-
 
 
 static bool tensor_mul_op_scalar_float32(float *out, float *in, uint32_t nvalues, float b) {
@@ -110,7 +109,40 @@ bool tensor_mul_op_scalar(tensor_pool_t *pool, tensor_t *t) {
 }
 
 
-bool tensor_mul_op_matrix(tensor_pool_t *pool, tensor_t *t) {
+bool tensor_mul_op_matrix([[maybe_unused]]tensor_pool_t *pool, [[maybe_unused]]tensor_t *t) {
     // TODO: Implement matrix multiplication
     return false;
 }
+
+tensor_t* tensor_mul_naive(tensor_pool_t *pool, tensor_t *a, tensor_t *b) {
+    assert(pool != NULL);
+    assert(a != NULL);
+    assert(b!= NULL);
+    assert(a->dtype == b->dtype);
+    
+    if (a -> ndims != b-> ndims) {
+        debug("tensor_mul: tensors do not have same number of dimensions\n");
+        return NULL;
+    }
+
+    // Check for same dimension
+    for (uint8_t i = 0; i < a->ndims; i++) {
+        if (a->dims[i] != b->dims[i]) {
+            debug("tensor_mul: tensors do not have same shape\n");
+            return NULL;
+        }
+    }
+    
+    tensor_t *t = tensor_dtype_create(pool, a->dtype, a->ndims, a->dims, NULL);
+    if(t == NULL) {
+        return NULL;
+    }
+
+    t->op = tensor_op_t::NAIVE_MATRIX_MUL;
+    t->a = a;
+    t->b = b;
+    
+    return t;
+}
+
+
