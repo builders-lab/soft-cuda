@@ -2,7 +2,7 @@
 #include "internal_header.h"
 
 
-#define TENSOR_POOL_ALIGN 8
+#define TENSOR_POOL_ALIGN 8UL
 
 // Creates a continuous pool of memory using bump allocator pattern
 tensor_pool_t *tensor_pool_create(size_t memsize) {

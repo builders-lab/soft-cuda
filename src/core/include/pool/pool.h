@@ -1,5 +1,5 @@
 #pragma once
-
+#include "soft-cuda/tensor/api.h"
 struct tensor_pool_instance {
     size_t memsize;
     size_t memused;

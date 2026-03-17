@@ -10,7 +10,7 @@ build/*
 shell
 # Dump file
 *.stackdump
-
+check.txt
 # Folder config file
 [Dd]esktop.ini
 

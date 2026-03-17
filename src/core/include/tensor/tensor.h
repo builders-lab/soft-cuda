@@ -1,11 +1,14 @@
 #ifndef PRIVATE_TENSOR_H
 #define PRIVATE_TENSOR_H
 #include <cstdint> 
+#include "soft-cuda/tensor/api.h"
 enum class tensor_op_t {
     NONE,
     CAST,         // Cast to a new dtype
     MUL_SCALAR,   // Multiply a by scalar b
     MUL_MATRIX,   // Multiply a by b
+    TRANSPOSE,    // Transpose a 2D matrix
+    NAIVE_MATRIX_MUL,
 };
 
 struct tensor_instance {
@@ -37,6 +40,9 @@ struct tensor_instance {
     
     // If autograd is required
     bool grad_compute;
+
+    // If tensor is transposed
+    bool is_transposed;
     // For storing autograd result
     tensor_t *grad;
 };
@@ -44,9 +50,7 @@ struct tensor_instance {
 // Create a new tensor with given data type and dimensions. If dims is NULL then
 // a scalar is created. If elems is NULL then the tensor is created with zeros.
 // If elems is not NULL then it is assigned as initial values.
-tensor_t *tensor_dtype_create(tensor_pool_t *pool, tensor_dtype_t dtype, uint32_t *dims, void *elems);
-
-
+tensor_t *tensor_dtype_create(tensor_pool_t *pool, tensor_dtype_t dtype, uint32_t num_dims, uint32_t *dims, void *elems);
 
 // Evaluate the tensor, return true on success
 bool tensor_evaluate(tensor_pool_t *pool, tensor_t *t);
@@ -55,9 +59,5 @@ bool tensor_evaluate(tensor_pool_t *pool, tensor_t *t);
 size_t tensor_dtype_sizeof(tensor_dtype_t dtype);
 
 
-size_t tensor_dtype_sizeof(tensor_dtype_t dtype);
-
-tensor_t *tensor_dtype_create(tensor_pool_t *pool, tensor_dtype_t dtype, uint32_t *dims, void *elems);
-
-bool tensor_evaluate(tensor_pool_t *pool, tensor_t *t);
+tensor_t *tensor_create(tensor_pool_t *pool,tensor_dtype_t dtype, uint32_t num_dims ,uint32_t *dims, void *elems);
 #endif // !PRIVATE_TENSOR_H
