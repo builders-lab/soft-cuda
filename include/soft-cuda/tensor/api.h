@@ -202,6 +202,7 @@ tensor_t* tensor_transpose(tensor_pool_t *pool, tensor_t *a);
  * 
  * @return             Returns a tensor object with operation set.
  * */
+//DONE
 tensor_t* tensor_add(tensor_pool_t *pool, tensor_t *x, tensor_t *y);
 
 
