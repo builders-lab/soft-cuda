@@ -3,6 +3,9 @@ cmake_minimum_required(VERSION 3.16)
 set(CMAKE_CXX_STANDARD 23)
 
 # ── GTest ──────────────────────────────────────────────────────────────────────
+if(POLICY CMP0135)
+  cmake_policy(SET CMP0135 NEW)
+endif()
 include(FetchContent)
 FetchContent_Declare(
   googletest
@@ -21,7 +24,7 @@ list(FILTER TEST_SOURCES EXCLUDE REGEX ".*main\\.cpp$")
 
 # ── Test executable ────────────────────────────────────────────────────────────
 add_executable(tensor_tests
-  test_tensor.cpp
+  soft-cuda/tensor/test_tensor.cpp
   ${TEST_SOURCES}        # project ka actual code seedha compile ho raha hai
 )
 

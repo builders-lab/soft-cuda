@@ -102,7 +102,7 @@ TEST(TensorCreateTest, NullElemsZeroInitializes) {
     tensor_t *t = tensor_create(pool, tensor_dtype_t::FLOAT32_T, 1, dims, nullptr);
     ASSERT_NE(t, nullptr);
 
-    float *data = (float *)t->data;
+    float *data = (float *)tensor_get_data(t);
     for (int i = 0; i < 4; i++) {
         EXPECT_FLOAT_EQ(data[i], 0.0f);
     }
@@ -119,7 +119,7 @@ TEST(TensorCreateTest, ElemsCopiedCorrectly) {
     tensor_t *t = tensor_create(pool, tensor_dtype_t::FLOAT32_T, 1, dims, input);
     ASSERT_NE(t, nullptr);
 
-    float *data = (float *)t->data;
+    float *data = (float *)tensor_get_data(t);
     EXPECT_FLOAT_EQ(data[0], 1.0f);
     EXPECT_FLOAT_EQ(data[1], 2.0f);
     EXPECT_FLOAT_EQ(data[2], 3.0f);
@@ -137,7 +137,7 @@ TEST(TensorCreateTest, Int32TensorCreates) {
     tensor_t *t = tensor_create(pool, tensor_dtype_t::INT32_T, 1, dims, input);
     ASSERT_NE(t, nullptr);
 
-    int32_t *data = (int32_t *)t->data;
+    int32_t *data = (int32_t *)tensor_get_data(t);
     EXPECT_EQ(data[0], 10);
     EXPECT_EQ(data[1], 20);
     EXPECT_EQ(data[2], 30);
