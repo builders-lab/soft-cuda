@@ -4,11 +4,12 @@
 #include "soft-cuda/tensor/api.h"
 enum class tensor_op_t {
     NONE,
-    CAST,         // Cast to a new dtype
-    MUL_SCALAR,   // Multiply a by scalar b
-    MUL_MATRIX,   // Multiply a by b
-    TRANSPOSE,    // Transpose a 2D matrix
-    NAIVE_MATRIX_MUL,
+    CAST,              // Cast to a new dtype
+    MUL_SCALAR,        // Multiply a by scalar b
+    MUL_MATRIX,        // Multiply a by b
+    TRANSPOSE,         // Transpose a 2D matrix
+    NAIVE_MATRIX_MUL,  // Multiply a by b using O(n3) solution
+    ADD,               // Add a and b
 };
 
 struct tensor_instance {
