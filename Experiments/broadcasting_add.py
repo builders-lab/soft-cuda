@@ -1,6 +1,7 @@
 import numpy as np
 
-arr = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
+b = np.array([1, 2, 3])
+b_broadcast = np.broadcast_to(b, (4, 3))
 
+print(b_broadcast.strides)
 
-print(arr)

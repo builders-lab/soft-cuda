@@ -137,7 +137,7 @@ bool tensor_evaluate(tensor_pool_t *pool, tensor_t *t) {
             assert(t->a != NULL);
             assert(t->b != NULL);
             assert(t->a->dtype == t->b->dtype);
-            success = tensor_mul_op_scalar(pool,t);
+            success = tensor_mul_op_matrix_naive(pool,t);
             break;
         case tensor_op_t::ADD:
             assert(t->a != NULL);
@@ -171,7 +171,7 @@ uint32_t* tensor_get_dims(tensor_t *t) {
 void tensor_print_data(tensor_t *t) {
     for(uint32_t i = 0; i < t->dims[0]; i++) {
         for(uint32_t j = 0; j < t->dims[1]; j++) {
-            uint32_t index = i*t->dims[0] + j;
+            uint32_t index = i*t->dims[1] + j;
             std::cout << ((float*)t->data)[index] << " ";
         }
         std::cout << "\n";
