@@ -73,7 +73,9 @@ TEST(PoolTest, ZeroResetsPool) {
 }
 
 TEST(PoolTest, DestroyNullIsSafe) {
-    tensor_pool_destroy(nullptr); 
+    // This tells GTest: "I expect this function call to crash the program."
+    // If it crashes, the test PASSES. If it survives, the test FAILS.
+    EXPECT_DEATH(tensor_pool_destroy(nullptr), ".*");
 }
 
 // ============================================================

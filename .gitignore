@@ -14,6 +14,8 @@ check.txt
 # Folder config file
 [Dd]esktop.ini
 
+.venv/
+
 # Recycle Bin used on file shares
 $RECYCLE.BIN/
 
