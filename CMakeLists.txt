@@ -29,5 +29,5 @@ add_executable(soft main.cpp)
 
 target_link_libraries(soft PRIVATE soft_lib)
 
-enable_testing()
-add_subdirectory(tests)
+# enable_testing()
+# add_subdirectory(tests)

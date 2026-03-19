@@ -11,6 +11,7 @@
 
 // Data type
 
+// DONE
 enum class tensor_dtype_t {
   UINT32_T,
   INT32_T,
@@ -25,9 +26,12 @@ enum class device_type {
   CPU,
 };
 
+
+//DONE
 // Opaque tensor
 typedef struct tensor_instance tensor_t;
 
+//DONE
 // Opaque pool of tensors
 typedef struct tensor_pool_instance tensor_pool_t;
 
@@ -45,6 +49,7 @@ typedef struct tensor_graph_instance tensor_graph_t;
  * @return             Return the identifier for the tensor, which will be unique across all 
  *                     other tensors in the same memory pool
  * */
+//DONE
 uint32_t tensor_id(tensor_t *t);
 
 
@@ -68,7 +73,7 @@ uint32_t tensor_id(tensor_t *t);
  * @return            Returns a tensor or NULL on error. Typically the error will be due
  *                    to insufficient memory in the pool.
  */
-
+//DONE
 tensor_t *tensor_create(tensor_pool_t *pool,tensor_dtype_t dtype, uint32_t num_dims ,uint32_t *dims, void *elems);
 
 
@@ -77,6 +82,7 @@ tensor_t *tensor_create(tensor_pool_t *pool,tensor_dtype_t dtype, uint32_t num_d
  * @param capacity_bytes  The total size of the raw memory block to pre-allocate
  * @return                Pointer to the opaque pool instance or NULL on failure
  */
+//DONE
 tensor_pool_t* tensor_pool_create(size_t capacity_bytes);
 
 
@@ -95,19 +101,24 @@ tensor_pool_t* tensor_pool_create(size_t capacity_bytes);
  * Instantly invalidates all tensors in the pool by resetting the bump pointer to zero.
  * Does NOT return memory to the OS. Highly efficient for the training loop.
  */
+//DONE
 void tensor_pool_zero(tensor_pool_t *pool);
 
 /*
  * Completely destroys the arena and returns the memory to the system.
  */
+//DONE
 void tensor_pool_destroy(tensor_pool_t *pool);
 
 // Allocate bytes on the pool, return NULL if memory exhausted
+//DONE
 void *tensor_pool_alloc(tensor_pool_t *pool, size_t size, uint32_t *id);
 
 // Return size of memory pool
+//DONE
 size_t tensor_pool_size(tensor_pool_t *pool);
 // Return used bytes of memory pool
+//DONE
 size_t tensor_pool_used(tensor_pool_t *pool);
 
 
@@ -125,21 +136,25 @@ bool tensor_move_device(tensor_t *t, device_type target_device, tensor_pool_t *p
  * Fetches the data of the tensor.
  * @return           Returns a void pointer to the array
  * */
+//DONE
 void* tensor_get_data(tensor_t *t);
 
 /*
  * @return returns the dimension of the tensor
  * */
+//DONE
 uint8_t tensor_get_ndims(tensor_t *t);
 
 /*
  * Get the dimension of the tensor
  * */
+//DONE
 uint32_t* tensor_get_dims(tensor_t *t);
 
 /*
  * Print the tensor data
  * */
+//DONE
 void tensor_print_data(tensor_t *t);
 
 /*
@@ -155,6 +170,7 @@ void tensor_print_data(tensor_t *t);
  * @Note               tensor_matmul expects B to be transposed and 
  *                     contiguous. Call tensor_transpose(B) first.
  * */
+//DONE
 tensor_t* tensor_mul(tensor_pool_t *pool, tensor_t *x, tensor_t *y);
 
 /* The naive version of matrix multiplication
@@ -165,6 +181,7 @@ tensor_t* tensor_mul(tensor_pool_t *pool, tensor_t *x, tensor_t *y);
  * @return             Returns a tensor object with operation set.
  * */
 
+//DONE
 tensor_t* tensor_mul_naive(tensor_pool_t *pool, tensor_t *x, tensor_t *y);
 
 /*
@@ -173,7 +190,7 @@ tensor_t* tensor_mul_naive(tensor_pool_t *pool, tensor_t *x, tensor_t *y);
  *
  * @return             Returns a tensor object with operation set.
  * */
-
+//DONE
 tensor_t* tensor_transpose(tensor_pool_t *pool, tensor_t *a);
 
 

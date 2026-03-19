@@ -6,7 +6,7 @@
 // #define buf_size 80
 // static char buf[buf_size];
 
-inline uint32_t tensor_id(tensor_t *t) {
+uint32_t tensor_id(tensor_t *t) {
     assert(t != NULL);
     return t->id;
 }
@@ -133,11 +133,17 @@ bool tensor_evaluate(tensor_pool_t *pool, tensor_t *t) {
             assert(t->a != NULL);
             success = tensor_tranpose_op_matrix(pool,t); 
             break;
-         case tensor_op_t::NAIVE_MATRIX_MUL:
+        case tensor_op_t::NAIVE_MATRIX_MUL:
             assert(t->a != NULL);
             assert(t->b != NULL);
             assert(t->a->dtype == t->b->dtype);
             success = tensor_mul_op_scalar(pool,t);
+            break;
+        case tensor_op_t::ADD:
+            assert(t->a != NULL);
+            assert(t->b != NULL);
+            assert(t->a->dtype == t->b->dtype);
+            success = tensor_op_add(pool,t);
             break;
         default:
             assert(false);
@@ -171,3 +177,4 @@ void tensor_print_data(tensor_t *t) {
         std::cout << "\n";
     }
 }
+
