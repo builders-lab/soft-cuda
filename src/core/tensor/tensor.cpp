@@ -145,6 +145,12 @@ bool tensor_evaluate(tensor_pool_t *pool, tensor_t *t) {
             assert(t->a->dtype == t->b->dtype);
             success = tensor_op_add(pool,t);
             break;
+        case tensor_op_t::BROADCAST_ADD:
+            assert(t->a != NULL);
+            assert(t->b != NULL);
+            assert(t->a->dtype == t->b->dtype);
+            success = tensor_op_broadcasting_add(pool,t);
+            break;
         default:
             assert(false);
     }
