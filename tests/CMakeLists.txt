@@ -25,6 +25,7 @@ list(FILTER TEST_SOURCES EXCLUDE REGEX ".*main\\.cpp$")
 # ── Test executable ────────────────────────────────────────────────────────────
 add_executable(tensor_tests
   soft-cuda/tensor/test_tensor.cpp
+  test_mul.cpp
   ${TEST_SOURCES}        # project ka actual code seedha compile ho raha hai
 )
 
