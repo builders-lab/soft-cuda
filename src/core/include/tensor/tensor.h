@@ -10,6 +10,7 @@ enum class tensor_op_t {
     TRANSPOSE,         // Transpose a 2D matrix
     NAIVE_MATRIX_MUL,  // Multiply a by b using O(n3) solution
     ADD,               // Add a and b
+    BROADCAST_ADD,     // Performs broadcasting during addition
 };
 
 struct tensor_instance {
@@ -25,6 +26,7 @@ struct tensor_instance {
     
     uint32_t stride[TENSOR_MAX_DIMS];
     
+    uint32_t broadcast_stride[TENSOR_MAX_DIMS];
     // Data
     void *data;
 
@@ -44,8 +46,15 @@ struct tensor_instance {
 
     // If tensor is transposed
     bool is_transposed;
+
+    // For DFS computation
+    bool evaluated;
+
     // For storing autograd result
     tensor_t *grad;
+    
+    //Device ID
+    uint8_t backend_id;
 };
 
 // Create a new tensor with given data type and dimensions. If dims is NULL then
