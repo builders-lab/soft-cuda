@@ -2,6 +2,10 @@
 #include <string>
 #include <cstdint> 
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 ///////////////////////////////////////////////
 
 // Maximum number of supported dimension
@@ -83,7 +87,7 @@ tensor_t *tensor_create(tensor_pool_t *pool,tensor_dtype_t dtype, uint32_t num_d
  * @return                Pointer to the opaque pool instance or NULL on failure
  */
 //DONE
-tensor_pool_t* tensor_pool_create(size_t capacity_bytes);
+tensor_pool_t* tensor_pool_create(size_t capacity_bytes, bool isOfDevice = false);
 
 
 
@@ -299,3 +303,7 @@ bool tensor_graph_forward_evaluate(tensor_graph_t *g);
 bool tensor_graph_backward_evaluate(tensor_graph_t *g);
 
 //////////////////////////////////////////////////////////////////////////
+
+#ifdef __cplusplus
+}
+#endif

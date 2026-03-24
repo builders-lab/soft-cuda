@@ -5,18 +5,24 @@
 #define TENSOR_POOL_ALIGN 8UL
 
 // Creates a continuous pool of memory using bump allocator pattern
-tensor_pool_t *tensor_pool_create(size_t memsize) {
+tensor_pool_t *tensor_pool_create(size_t memsize, bool isOfDevice) {
     assert(memsize);
 
     tensor_pool_t *pool = (tensor_pool_t *)malloc(sizeof(tensor_pool_t));
     if(pool == NULL) {
         return NULL;
     }
-
+    // cudaError_t cudaError;
     pool->memsize = memsize;
     pool->memused = 0;
     pool->nallocs = 0;
-    pool->mem = malloc(memsize);
+    pool->isOfDevice = isOfDevice;
+    if (isOfDevice) {
+      cudaError_t cudaError = cudaMalloc(&pool->mem,memsize);
+    } else {
+      pool->mem = malloc(memsize);
+    }
+    // (void *)cudaError;
     if (pool->mem == NULL) {
         free(pool);
         return NULL;
