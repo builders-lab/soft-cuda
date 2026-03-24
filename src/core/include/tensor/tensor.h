@@ -53,8 +53,8 @@ struct tensor_instance {
     // For storing autograd result
     tensor_t *grad;
     
-    //Device ID
-    uint8_t backend_id;
+    // Storing the status if it has been evaluated
+    uint8_t stateTracker; // 0-> unvisited, 1-> in processing, 2-> fully processed
 };
 
 // Create a new tensor with given data type and dimensions. If dims is NULL then
