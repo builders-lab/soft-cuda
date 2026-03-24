@@ -81,7 +81,7 @@ tensor_t *tensor_dtype_create(tensor_pool_t *pool, tensor_dtype_t dtype,uint32_t
     for (uint8_t i = 0; i < (uint8_t)ndims; i++) {
         t->dims[i] = dims[i];
     }
-    // TODO: Implement the stride logic
+
     if(ndims > 0) {
         t->stride[ndims-1] = 1;
         for(int8_t i = ((int8_t)ndims) - 2; i >= 0; i--) {
