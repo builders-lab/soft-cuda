@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <cstdint> 
+#include <vector>
 
 #ifdef __cplusplus
 extern "C" {
@@ -39,9 +40,36 @@ typedef struct tensor_instance tensor_t;
 // Opaque pool of tensors
 typedef struct tensor_pool_instance tensor_pool_t;
 
-// Opaque graph
-typedef struct tensor_graph_instance tensor_graph_t;
 
+struct execution_node {
+    
+    // Pointer to the tensor we are gonna op on
+    tensor_t *t;
+
+    // backend_id It's gonna be a function pointer instead more of handrolled vtable
+    void (*backend_fn)(tensor_t*, tensor_t*, tensor_t*);
+
+    // Pointer to device VRAM alloc, NULL if not needed
+    void* device_ptr;
+    
+    // Boolean flag storing weather it will need to be transfered based upon reading the childs OPS
+    bool to_device_needed;
+
+    // Position in array storing cause could be useful
+    uint32_t pos;
+};
+
+typedef struct execution_node execution_node_t;
+
+/*******************************************************************************
+ * !!!!!!!! DISCARDED !!!!!!!!
+ * Discarding this in favour of vector of execution_node
+ *
+ * Opaque graph
+ * typedef struct tensor_graph_instance tensor_graph_t;
+ * *****************************************************************************
+ */
+ typedef struct tensor_graph_instance tensor_graph_t;
 ///////////////////////////////////////////////
 // RETURN TENSOR INFORMATION
 
@@ -276,16 +304,21 @@ void tensor_sgd_template(tensor_pool_t *static_weights_pool, double learning_rat
  * */
 tensor_graph_t* tensor_graph_create(tensor_pool_t *graph_pool);
 
-/*
+
+
+/* !!!!! SIGNATURE WAS CHANGED !!!!!
  * Topologically sort the tensors and resolve dependency.
  *
- * @params g          The graph struct for storing sorted tensors.
  * @params t          The tensor from where you want to build graph
  *                    doesn't take ops after this into account.
+ * @params seq        vector refrence for storing sorted tensors.
  * @return            Boolean status flag
  * */
 
-bool tensor_graph_build(tensor_graph_t *g, tensor_t *t);
+bool verifyIfDAG(tensor_t *t, std::vector<execution_node> &seq);
+void DAGinit(tensor_t *t);
+// Previous SIGNATURE
+// bool tensor_graph_build(tensor_graph_t *g, tensor_t *t);
 
 
 /*

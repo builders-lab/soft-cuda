@@ -91,7 +91,9 @@ tensor_t *tensor_dtype_create(tensor_pool_t *pool, tensor_dtype_t dtype,uint32_t
     t->dims[ndims] = 0;
     t->op = tensor_op_t::NONE;
     t->id = id;
-
+    t->a = NULL;
+    t->b = NULL;
+    t->stateTracker = 0;
     t->device = device_type::CPU;
     t->grad_compute = false;
     t->is_transposed = false;
