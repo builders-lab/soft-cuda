@@ -40,25 +40,6 @@ typedef struct tensor_instance tensor_t;
 // Opaque pool of tensors
 typedef struct tensor_pool_instance tensor_pool_t;
 
-
-struct execution_node {
-    
-    // Pointer to the tensor we are gonna op on
-    tensor_t *t;
-
-    // backend_id It's gonna be a function pointer instead more of handrolled vtable
-    void (*backend_fn)(tensor_pool_t*, tensor_t*);
-
-    // Pointer to device VRAM alloc, NULL if not needed
-    void* device_ptr;
-    
-    // Boolean flag storing weather it will need to be transfered based upon reading the childs OPS
-    bool to_device_needed;
-
-    // Position in array storing cause could be useful
-    uint32_t pos;
-};
-
 typedef struct execution_node execution_node_t;
 
 /*******************************************************************************
@@ -275,6 +256,7 @@ tensor_t* tensor_cross_entropy_loss(tensor_pool_t *pool, const tensor_t *predict
 // Evalutes the operation(Forward) with depth=1
 // @return             boolean flag for status
 bool tensor_evaluate(tensor_pool_t *pool, tensor_t *t);
+bool tensor_evaluate_GPU(tensor_pool_t *pool, tensor_t *t);
 
 /////////////////////////////////////////////////////////////
 // NO DESIGNING DONE HENCE NOT RECOMMENDED TO WORK AROUND USE IT JUST AS PLACEHOLDER BUT BE READY TO UPDATE
@@ -315,8 +297,9 @@ tensor_graph_t* tensor_graph_create(tensor_pool_t *graph_pool);
  * @return            Boolean status flag
  * */
 
-bool verifyIfDAG(tensor_t *t, std::vector<execution_node> &seq);
-void DAGinit(tensor_t *t);
+bool verifyIfDAG(tensor_pool_t *pool,tensor_t *t, std::vector<execution_node_t*> &seq);
+
+int32_t getPosOfNode(execution_node_t *et);
 // Previous SIGNATURE
 // bool tensor_graph_build(tensor_graph_t *g, tensor_t *t);
 

@@ -8,6 +8,7 @@ using namespace std;
 int main() {
     // Create pool
     tensor_pool_t *pool = tensor_pool_create(1024 * 1024);
+    tensor_pool_t *pool_2 = tensor_pool_create(1024 * 1024);
     assert(pool != NULL);
 
     cout << "=========================================== \n";
@@ -39,16 +40,17 @@ int main() {
     cout << "=========================================== \n";
     cout << "==============LAZY EVAL DONE=============== \n";
     
-    std::vector<execution_node_t> seq;
-    bool oki = verifyIfDAG(j, seq);
+    std::vector<execution_node_t*> seq;
+    bool oki = verifyIfDAG(pool_2,j, seq);
     cout << oki << endl;
     // tensor_print_data(c);
     if (oki) {
         for(int i = 0; i < seq.size(); i++) {
-            cout << seq[i].pos << "\n";
+            cout << getPosOfNode(seq[i]) << "\n";
         }
     }
 
     tensor_pool_destroy(pool);
+    tensor_pool_destroy(pool_2);
     return 0;
 }
