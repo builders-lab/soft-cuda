@@ -1,7 +1,7 @@
 #ifndef DEBUG_H
 #define DEBUG_H
 
-void tensor_panic(const char* file, int line, const char *expr);
+void tensor_panic(const char *file, int line, const char *expr);
 void tensor_printf(const char *file, int line, const char *fmt, ...);
 //
 /*
@@ -20,6 +20,5 @@ void tensor_printf(const char *file, int line, const char *fmt, ...);
 #define assert(e)
 #endif // !NDEBUG
 */
-
 
 #endif // !DEBUG_H

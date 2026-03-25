@@ -42,11 +42,12 @@ int main() {
     
     std::vector<execution_node_t*> seq;
     bool oki = verifyIfDAG(pool_2,j, seq);
+    assignBackendGraph(seq);
     cout << oki << endl;
     // tensor_print_data(c);
     if (oki) {
         for(int i = 0; i < seq.size(); i++) {
-            cout << getPosOfNode(seq[i]) << "\n";
+             printExecutionNode(seq[i]);
         }
     }
 

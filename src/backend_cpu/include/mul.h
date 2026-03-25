@@ -11,7 +11,7 @@ bool tensor_mul_op_matrix(tensor_pool_t *pool, tensor_t *t);
 bool tensor_mul_op_matrix_naive(tensor_pool_t *pool, tensor_t *t);
 
 inline bool tensor_is_scalar(tensor_t *t) {
-    assert(t!= NULL);
+    assert(t != NULL);
     return t->ndims == 0;
 }
 
