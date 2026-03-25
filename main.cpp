@@ -9,7 +9,9 @@ int main() {
     // Create pool
     tensor_pool_t *pool = tensor_pool_create(1024 * 1024);
     tensor_pool_t *pool_2 = tensor_pool_create(1024 * 1024);
+    tensor_pool_t *pool_gpu = tensor_pool_create(1024 * 1024, true);
     assert(pool != NULL);
+    assert(pool_gpu != NULL);
 
     cout << "=========================================== \n";
     cout << "=============TESTING DAG VERIFICATION============== \n";
@@ -42,7 +44,7 @@ int main() {
     
     std::vector<execution_node_t*> seq;
     bool oki = verifyIfDAG(pool_2,j, seq);
-    assignBackendGraph(seq);
+    assignBackendGraph(pool_gpu, seq);
     cout << oki << endl;
     // tensor_print_data(c);
     if (oki) {

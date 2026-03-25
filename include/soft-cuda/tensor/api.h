@@ -286,12 +286,11 @@ tensor_graph_t *tensor_graph_create(tensor_pool_t *graph_pool);
 
 bool verifyIfDAG(tensor_pool_t *pool, tensor_t *t, std::vector<execution_node_t *> &seq);
 
-void assignBackendGraph(std::vector<execution_node_t *> &nodes);
-
+void assignBackendGraph(tensor_pool_t *pool,std::vector<execution_node_t *> &nodes);
 
 int32_t getPosOfNode(execution_node_t *et);
 
-void printExecutionNode(execution_node_t* et);
+void printExecutionNode(execution_node_t *et);
 // Previous SIGNATURE
 // bool tensor_graph_build(tensor_graph_t *g, tensor_t *t);
 

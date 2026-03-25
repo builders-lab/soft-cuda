@@ -19,6 +19,9 @@ tensor_pool_t *tensor_pool_create(size_t memsize, bool isOfDevice) {
     if (isOfDevice) {
         cudaError_t cudaError = cudaMalloc(&pool->mem, memsize);
         if (cudaError != cudaSuccess) {
+          debug("CRITICAL CUDA FAILURE: %s - %s\n", 
+                   cudaGetErrorName(cudaError), 
+                   cudaGetErrorString(cudaError));
             free(pool);
             return NULL;
         }
@@ -49,8 +52,14 @@ void tensor_pool_destroy(tensor_pool_t *pool) {
           tensor_pool_used(pool));
     if (pool) {
         tensor_pool_zero(pool);
-        free(pool->mem);
-        free(pool);
+        if(pool->isOfDevice) {
+            cudaFree(pool->mem);
+            free(pool);
+        } else {
+            free(pool->mem);
+            free(pool);
+        }
+        
     }
 }
 
