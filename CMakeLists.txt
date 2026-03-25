@@ -15,8 +15,8 @@ target_include_directories(soft_lib
 )
 
 target_compile_options(soft_lib PRIVATE
-  $<$<AND:$<CONFIG:Debug>,$<COMPILE_LANGUAGE:CXX>>:-O0 -Wall -Weffc++ -Wextra -Wconversion -Wsign-conversion -Werror -pedantic-errors -ggdb -fsanitize=address>
-  $<$<AND:$<CONFIG:Debug>,$<COMPILE_LANGUAGE:CUDA>>:-O0 -G>
+  $<$<AND:$<CONFIG:Debug>,$<COMPILE_LANGUAGE:CXX>>:-O0 -Wall -Weffc++ -Wextra -Wconversion -Wsign-conversion -Werror -pedantic-errors -ggdb>
+  $<$<AND:$<CONFIG:Debug>,$<COMPILE_LANGUAGE:CUDA>>:-O0>
   $<$<AND:$<CONFIG:Release>,$<COMPILE_LANGUAGE:CXX>>:-O2 -DNDEBUG>
   $<$<AND:$<CONFIG:Release>,$<COMPILE_LANGUAGE:CUDA>>:-O2 -DNDEBUG>
 )
@@ -24,13 +24,15 @@ target_compile_options(soft_lib PRIVATE
 set_target_properties(soft_lib PROPERTIES
   CUDA_SEPARABLE_COMPILATION ON
 )
-
-target_compile_options(soft_lib PUBLIC
-  $<$<AND:$<CONFIG:Debug>,$<COMPILE_LANGUAGE:CXX>>:-fsanitize=address>
-)
-target_link_options(soft_lib PUBLIC
-  $<$<CONFIG:Debug>:-fsanitize=address>
-)
+#
+# target_compile_options(soft_lib PUBLIC
+#   $<$<AND:$<CONFIG:Debug>,$<COMPILE_LANGUAGE:CXX>>:-fsanitize=address>
+# )
+target_compile_options(soft_lib PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-g>)
+#
+# target_link_options(soft_lib PUBLIC
+#   $<$<CONFIG:Debug>:-fsanitize=address>
+# )
 add_executable(soft main.cpp)
 
 target_link_libraries(soft PRIVATE soft_lib)

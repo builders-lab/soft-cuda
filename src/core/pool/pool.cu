@@ -19,7 +19,8 @@ tensor_pool_t *tensor_pool_create(size_t memsize, bool isOfDevice) {
     if (isOfDevice) {
         cudaError_t cudaError = cudaMalloc(&pool->mem, memsize);
         if (cudaError != cudaSuccess) {
-          debug("CRITICAL CUDA FAILURE: %s - %s\n", 
+            debug("Allocating %zu bytes on GPU\n", memsize);
+            debug("CRITICAL CUDA FAILURE: %s - %s\n", 
                    cudaGetErrorName(cudaError), 
                    cudaGetErrorString(cudaError));
             free(pool);
