@@ -127,6 +127,8 @@ size_t tensor_pool_size(tensor_pool_t *pool);
 // DONE
 size_t tensor_pool_used(tensor_pool_t *pool);
 
+////////////////////////////////////////////////////////////////////////////////////////////
+// WILL LIKELY BE DEPRECEATED
 /*
  * Move the memory pool between device_type
  *
@@ -135,7 +137,9 @@ size_t tensor_pool_used(tensor_pool_t *pool);
  * @pool               Pool where the tensor will be allocated
  * */
 
-bool tensor_move_device(tensor_t *t, device_type target_device, tensor_pool_t *pool);
+// WILL LIKELY BE DEPRECEATED
+// bool tensor_move_device(tensor_t *t, device_type target_device, tensor_pool_t *pool);
+////////////////////////////////////////////////////////////////////////////////////////////
 
 /*
  * Fetches the data of the tensor.
@@ -265,6 +269,9 @@ void tensor_sgd_template(tensor_pool_t *static_weights_pool, double learning_rat
 /////////////////////////////////////////////////////////////
 // GRAPH OPERATIONS
 
+
+/////////////////////////////////////////////////////////////
+// DEPRECEATED verifyIfDAG DOES THIS AND BETTER
 /*
  * Creates Tensor graph struct.
  *
@@ -273,23 +280,45 @@ void tensor_sgd_template(tensor_pool_t *static_weights_pool, double learning_rat
  *
  * Is HIGHLY RECOMMENDED to make seperate pool for graph.
  * */
-tensor_graph_t *tensor_graph_create(tensor_pool_t *graph_pool);
+// tensor_graph_t *tensor_graph_create(tensor_pool_t *graph_pool);
+/////////////////////////////////////////////////////////////////
+
 
 /* !!!!! SIGNATURE WAS CHANGED !!!!!
- * Topologically sort the tensors and resolve dependency.
- *
+ * Topologically sort the tensors, detect dependency and return a vector of .
+ * 
+ * @params pool       The data pool where the execution nodes will be 
+ *                    stored RECOMMENDED/ADVISED to give different memory pool.
  * @params t          The tensor from where you want to build graph
  *                    doesn't take ops after this into account.
  * @params seq        vector refrence for storing sorted tensors.
+ *
  * @return            Boolean status flag
  * */
-
+// DONE
 bool verifyIfDAG(tensor_pool_t *pool, tensor_t *t, std::vector<execution_node_t *> &seq);
 
+
+/* This function marks the tensor for transfer to GPU, This also assigns the space on VRAM.
+ * 
+ * @params pool       The VRAM pool where GPU ops data is stored,
+ *                    only data is transfered not whole tensor,
+ *                    ADVISED/RECOMMENDED/COMPUSLORY to give different memory pool.
+ * @params nodes      The vector of execution_node_t in which original data was stored passed by refrence.
+ *
+ * @return void       Doesn't return anything.
+ * */
+// DONE
 void assignBackendGraph(tensor_pool_t *pool,std::vector<execution_node_t *> &nodes);
 
+/* @params  Take execution_node_t which you wanna know
+ * @returns the postion of the execution_node_t after verifyIfDAG
+ * */
+// DONE
 int32_t getPosOfNode(execution_node_t *et);
 
+// Prints all data about execution_node_t as well as tensor data
+// DONE
 void printExecutionNode(execution_node_t *et);
 // Previous SIGNATURE
 // bool tensor_graph_build(tensor_graph_t *g, tensor_t *t);
