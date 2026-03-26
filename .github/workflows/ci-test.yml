@@ -10,20 +10,15 @@ on:
 
 jobs:
   build-and-test:
-    runs-on: ubuntu-latest # Kyunki project Linux (Ubuntu/Arch) par based hai 
+    runs-on: [self-hosted, linux, GPU] # Cause we need GPU for NVCC 
 
     steps:
     - name: Checkout Code
       uses: actions/checkout@v4
 
-    - name: Install Dependencies (CMake & Compilers)
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y cmake g++ build-essential
-
     - name: Configure CMake
       # Project ko build folder mein configure karega 
-      run: cmake -B build -S .
+      run: cmake -B build -DCMAKE_BUILD_TYPE=Debug -S .
 
     - name: Build Project
       # Code ko compile karega 
