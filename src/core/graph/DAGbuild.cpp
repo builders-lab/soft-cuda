@@ -3,7 +3,7 @@
 #include "graph/DAGbuild.h"
 #include "vector"
 #include <cstdint>
-
+#include <unordered_map>
 // Actually let's try something better
 bool verifyIfDAG(tensor_pool_t *pool, tensor_t *t, std::vector<execution_node_t *> &seq) {
     if (t->stateTracker == 1) {
@@ -36,5 +36,26 @@ bool verifyIfDAG(tensor_pool_t *pool, tensor_t *t, std::vector<execution_node_t 
     seq.push_back(en);
     return true;
 }
+
+void setUpParentReference( std::vector<execution_node_t *> &nodes ) {
+    std::unordered_map<uint32_t, int32_t> id_to_pos;
+    for(auto node : nodes) {
+        id_to_pos[node->t->id] = (int32_t)node->pos;
+    }
+    for(auto node : nodes) {
+        if(node->t->a != NULL) {
+            node->parent_pos[0] = id_to_pos[node->t->a->id];
+        } else {
+            node->parent_pos[0] = -1;
+        }
+
+        if(node->t->b != NULL) {
+            node->parent_pos[1] = id_to_pos[node->t->b->id];
+        } else {
+            node->parent_pos[1] = -1;
+        }
+    }
+}
+
 
 int32_t getPosOfNode(execution_node_t *et) { return (int32_t)(et->pos); }

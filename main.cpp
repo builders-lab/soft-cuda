@@ -45,6 +45,7 @@ int main() {
     std::vector<execution_node_t*> seq;
     bool oki = verifyIfDAG(pool_2,j, seq);
     assignBackendGraph(pool_gpu, seq);
+    tensor_graph_forward_evaluate(pool, pool_gpu, seq);
     cout << oki << endl;
     // tensor_print_data(c);
     if (oki) {

@@ -21,17 +21,11 @@ void assignBackend(execution_node_t *e) {
  */
 device_type assignDevice([[maybe_unused]] uint8_t ndims, [[maybe_unused]] uint32_t *dims,
                          [[maybe_unused]] tensor_op_t op) {
-    return device_type::GPU;
+    return device_type::CPU;
 }
 
-int32_t getTheExecutionNodeIndex(uint32_t id, std::vector<execution_node_t *> &nodes) {
-    for (auto &node : nodes) {
-        if (node->t->id == id) {
-
-            return (int32_t)(node->pos);
-        }
-    }
-    return -1;
+int32_t getTheExecutionNodeIndex(execution_node_t *node, uint32_t idx) {
+    return node->parent_pos[idx];
 }
 
 
@@ -49,6 +43,7 @@ void assignPlaceOnDeviceMemory(tensor_pool_t *pool, int32_t a_idx, std::vector<e
 }
 
 void assignBackendGraph(tensor_pool_t *pool,std::vector<execution_node_t *> &nodes) {
+    setUpParentReference(nodes);
     for (auto node : nodes) {
         assignBackend(node);
     }
@@ -62,7 +57,7 @@ void assignBackendGraph(tensor_pool_t *pool,std::vector<execution_node_t *> &nod
             if (node->t->a == NULL)
                 goto trp;
             if (node->t->a->device == device_type::CPU) {
-                int32_t a_idx = getTheExecutionNodeIndex(node->t->a->id, nodes);
+                int32_t a_idx = getTheExecutionNodeIndex(node, 0);
                 assert(a_idx != -1);
                 nodes[((size_t)a_idx)]->to_device_needed = true;
                 assignPlaceOnDeviceMemory(pool, a_idx, nodes);
@@ -71,7 +66,7 @@ void assignBackendGraph(tensor_pool_t *pool,std::vector<execution_node_t *> &nod
             if (node->t->b == NULL)
                 continue;
             if (node->t->b->device == device_type::CPU) {
-                int32_t b_idx = getTheExecutionNodeIndex(node->t->b->id, nodes);
+                int32_t b_idx = getTheExecutionNodeIndex(node, 1);
                 assert(b_idx != -1);
                 nodes[((size_t)b_idx)]->to_device_needed = true;
                 assignPlaceOnDeviceMemory(pool, b_idx, nodes);
@@ -84,18 +79,54 @@ void assignBackendGraph(tensor_pool_t *pool,std::vector<execution_node_t *> &nod
         assert(node->backend_fn != NULL);
         if (node->backend_fn == tensor_evaluate_GPU) {
             if (node->t->a != NULL) {
-                int32_t a_idx = getTheExecutionNodeIndex(node->t->a->id, nodes);
+                int32_t a_idx = getTheExecutionNodeIndex(node,0);
                 assert(nodes[(size_t)a_idx]->to_device_needed == true ||
                        nodes[(size_t)a_idx]->t->device == device_type::GPU);
             }
             if (node->t->b != NULL) {
-                int32_t b_idx = getTheExecutionNodeIndex(node->t->b->id, nodes);
+                int32_t b_idx = getTheExecutionNodeIndex(node, 1);
                 assert(nodes[(size_t)b_idx]->to_device_needed == true ||
                        nodes[(size_t)b_idx]->t->device == device_type::GPU);
             }
         }
     }
 }
+
+bool tensor_graph_forward_evaluate(tensor_pool_t *pool_cpu, tensor_pool_t *pool_gpu, std::vector<execution_node_t *> &nodes) {
+    for(auto node : nodes) {
+        if(node->backend_fn == tensor_evaluate_GPU){
+            // TODO: Write the memory copy for parents when child have this as well as evaluating it
+            // NOTE: We have to check maybe parents are already on GPU
+            int32_t a_idx = getTheExecutionNodeIndex(node, 0);
+            if(a_idx != -1){
+                auto parent_a = nodes[(size_t)a_idx];
+
+                // NOTE: we are totally ignoring the to_device_needed flag am i missing something which i thought i needed.
+                // TODO: Review this part once again maybe try for streams for better performance or whatever
+                if (parent_a->t->device == device_type::CPU) {
+                    size_t size_a = nodes[(size_t)a_idx]->t->nvalues * sizeof(float) ;
+                    cudaMemcpy(parent_a->device_ptr, parent_a->t->data, size_a, cudaMemcpyHostToDevice);
+                    parent_a->t->device = device_type::GPU;
+                }
+            }
+            int32_t b_idx = getTheExecutionNodeIndex(node, 1);
+            if(b_idx != -1){
+                auto parent_b = nodes[(size_t)b_idx];
+                if (parent_b->t->device == device_type::CPU) {
+                    size_t size_b = nodes[(size_t)b_idx]->t->nvalues * sizeof(float) ;
+                    cudaMemcpy(parent_b->device_ptr, parent_b->t->data, size_b, cudaMemcpyHostToDevice);
+                    parent_b->t->device = device_type::GPU;
+                }
+            }
+            (*(node->backend_fn))(pool_gpu, node->t);
+            // device_type device;
+        } else if (node->backend_fn == tensor_evaluate) {
+            (*(node->backend_fn))(pool_cpu, node->t);
+        }
+    }
+    return true;
+}
+
 
 void printExecutionNode(execution_node_t *et) {
     std::cout << et->pos << "\n";

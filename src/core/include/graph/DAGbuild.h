@@ -4,6 +4,7 @@ struct execution_node {
 
     // The id of execution_node
     uint32_t id;
+
     // Pointer to the tensor we are gonna op on
     tensor_t *t;
 
@@ -18,6 +19,10 @@ struct execution_node {
 
     // Position in array storing cause could be useful
     uint32_t pos;
+    
+    // Stores parent node pos
+    int32_t parent_pos[2];
 };
 
+void setUpParentReference( std::vector<execution_node_t *> &nodes );
 bool verifyIfDAG(tensor_pool_t *pool, tensor_t *t, std::vector<execution_node> &seq);

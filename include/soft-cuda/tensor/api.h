@@ -328,7 +328,7 @@ void printExecutionNode(execution_node_t *et);
  * @params            graph struct for ops sequence
  * @return            boolean status flag
  * */
-bool tensor_graph_forward_evaluate(tensor_graph_t *g);
+bool tensor_graph_forward_evaluate(tensor_pool_t *pool_cpu, tensor_pool_t *pool_gpu, std::vector<execution_node_t *> &nodes);
 
 /*
  * Evaluate the whole graph backward operation.
