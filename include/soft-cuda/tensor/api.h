@@ -137,8 +137,11 @@ size_t tensor_pool_used(tensor_pool_t *pool);
  * @pool               Pool where the tensor will be allocated
  * */
 
-// WILL LIKELY BE DEPRECEATED
+// DEPRECEATED
 // bool tensor_move_device(tensor_t *t, device_type target_device, tensor_pool_t *pool);
+// NEW IMPLEMENTATION
+
+bool execution_node_to_host(execution_node_t *node);
 ////////////////////////////////////////////////////////////////////////////////////////////
 
 /*
@@ -249,8 +252,8 @@ tensor_t *tensor_cross_entropy_loss(tensor_pool_t *pool, const tensor_t *predict
 
 // Evalutes the operation(Forward) with depth=1
 // @return             boolean flag for status
-bool tensor_evaluate(tensor_pool_t *pool, tensor_t *t);
-bool tensor_evaluate_GPU(tensor_pool_t *pool, tensor_t *t);
+bool tensor_evaluate( tensor_pool_t *pool,tensor_t *t,  float *d_a, float *d_b, float *d_res);
+bool tensor_evaluate_GPU( tensor_pool_t *pool,tensor_t *t,  float *d_a, float *d_b, float *d_res);
 
 /////////////////////////////////////////////////////////////
 // NO DESIGNING DONE HENCE NOT RECOMMENDED TO WORK AROUND USE IT JUST AS PLACEHOLDER BUT BE READY TO

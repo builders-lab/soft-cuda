@@ -64,7 +64,7 @@ tensor_t *tensor_dtype_create(tensor_pool_t *pool, tensor_dtype_t dtype, uint32_
                               uint32_t *dims, void *elems);
 
 // Evaluate the tensor, return true on success
-bool tensor_evaluate(tensor_pool_t *pool, tensor_t *t);
+bool tensor_evaluate( tensor_pool_t *pool,tensor_t *t,  float *d_a, float *d_b, float *d_res);
 
 // Return the data type size
 size_t tensor_dtype_sizeof(tensor_dtype_t dtype);

@@ -9,7 +9,7 @@ struct execution_node {
     tensor_t *t;
 
     // backend_id It's gonna be a function pointer instead more of handrolled vtable
-    bool (*backend_fn)(tensor_pool_t *, tensor_t *);
+    bool (*backend_fn)(tensor_pool_t *, tensor_t *, float *d_a, float *d_b, float *d_res);
 
     // Pointer to device VRAM alloc, NULL if not needed
     void *device_ptr;

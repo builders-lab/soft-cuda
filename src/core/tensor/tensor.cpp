@@ -109,7 +109,7 @@ tensor_t *tensor_create(tensor_pool_t *pool, tensor_dtype_t dtype, uint32_t num_
     return tensor_dtype_create(pool, dtype, num_dims, dims, elems);
 }
 
-bool tensor_evaluate(tensor_pool_t *pool, tensor_t *t) {
+bool tensor_evaluate(tensor_pool_t *pool, tensor_t *t,  [[maybe_unused]]float *d_a, [[maybe_unused]]float *d_b, [[maybe_unused]]float *d_res) {
     assert(pool != NULL);
     assert(t != NULL);
     bool success = false;
@@ -170,8 +170,33 @@ bool tensor_evaluate(tensor_pool_t *pool, tensor_t *t) {
 /*************************************************************/
 /*************************************************************/
 // TODO: Implement GPU module
-bool tensor_evaluate_GPU([[maybe_unused]] tensor_pool_t *pool, [[maybe_unused]] tensor_t *t) {
-    return false;
+bool tensor_evaluate_GPU([[maybe_unused]] tensor_pool_t *pool, [[maybe_unused]]tensor_t *t,  [[maybe_unused]]float *d_a, [[maybe_unused]]float *d_b, [[maybe_unused]]float *d_res) {
+    assert(pool != NULL);
+    assert(t != NULL);
+    bool success = false;
+
+    switch (t->op) {
+    case tensor_op_t::NONE:
+        success = true;
+        break;
+    case tensor_op_t::CAST:
+        break;
+        // TODO: Implement here
+    case tensor_op_t::ADD:
+        assert(t->a != NULL);
+        assert(t->b != NULL);
+        assert(t->a->dtype == t->b->dtype);
+        success = tensor_add_op_cuda(t, d_a, d_b, d_res);
+        break;
+    default:
+        assert(false);
+    }
+    if (success) {
+        debug("tensor_evaluate_GPU: success\n");
+    } else {
+        debug("tensor_evaluate_GPU: FUBAR\n");
+    }
+    return success;
 }
 /*************************************************************/
 /*************************************************************/

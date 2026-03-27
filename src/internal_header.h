@@ -14,4 +14,5 @@
 #include "./core/include/graph/DAGbuild.h"
 #include "./core/include/graph/assignBackend.h"
 
+#include "backend_gpu/include/math/add.h"
 // clang-format on

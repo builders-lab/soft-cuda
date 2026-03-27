@@ -1,6 +1,7 @@
 #include "internal_header.h"
 #include "vector"
 #include <iostream>
+#include <cuda_runtime.h>
 
 void assignBackend(execution_node_t *e) {
     device_type dt = assignDevice(e->t->ndims, e->t->dims, e->t->op);
@@ -21,7 +22,10 @@ void assignBackend(execution_node_t *e) {
  */
 device_type assignDevice([[maybe_unused]] uint8_t ndims, [[maybe_unused]] uint32_t *dims,
                          [[maybe_unused]] tensor_op_t op) {
-    return device_type::CPU;
+    if(op == tensor_op_t::NONE) {
+        return device_type::CPU;
+    }
+    return device_type::GPU;
 }
 
 int32_t getTheExecutionNodeIndex(execution_node_t *node, uint32_t idx) {
@@ -105,7 +109,10 @@ bool tensor_graph_forward_evaluate(tensor_pool_t *pool_cpu, tensor_pool_t *pool_
                 // TODO: Review this part once again maybe try for streams for better performance or whatever
                 if (parent_a->t->device == device_type::CPU) {
                     size_t size_a = nodes[(size_t)a_idx]->t->nvalues * sizeof(float) ;
-                    cudaMemcpy(parent_a->device_ptr, parent_a->t->data, size_a, cudaMemcpyHostToDevice);
+                    cudaError_t err_a = cudaMemcpy(parent_a->device_ptr, parent_a->t->data, size_a, cudaMemcpyHostToDevice);
+                    if (err_a != cudaSuccess) {
+                        debug("CRITICAL FAILURE: Parent A transfer failed! %s\n", cudaGetErrorString(err_a));
+                    }
                     parent_a->t->device = device_type::GPU;
                 }
             }
@@ -114,14 +121,27 @@ bool tensor_graph_forward_evaluate(tensor_pool_t *pool_cpu, tensor_pool_t *pool_
                 auto parent_b = nodes[(size_t)b_idx];
                 if (parent_b->t->device == device_type::CPU) {
                     size_t size_b = nodes[(size_t)b_idx]->t->nvalues * sizeof(float) ;
-                    cudaMemcpy(parent_b->device_ptr, parent_b->t->data, size_b, cudaMemcpyHostToDevice);
+                    cudaError_t err_b = cudaMemcpy(parent_b->device_ptr, parent_b->t->data, size_b, cudaMemcpyHostToDevice);
+                    if (err_b != cudaSuccess) {
+                        debug("CRITICAL FAILURE: Parent B transfer failed! %s\n", cudaGetErrorString(err_b));
+                    }
                     parent_b->t->device = device_type::GPU;
                 }
             }
-            (*(node->backend_fn))(pool_gpu, node->t);
+            // (*(node->backend_fn))(pool_gpu, node->t);
+            // bool (*gpu_backend_fn)(tensor_t *t, float *d_a, float *d_b, float *d_res);
+            float *d_a = NULL;
+            if (a_idx != -1) d_a = (float*)(nodes[(size_t)a_idx]->device_ptr);
+            float *d_b = NULL;
+            if (b_idx != -1) d_b = (float*)(nodes[(size_t)b_idx]->device_ptr);
+            float *d_out = (float*)(node->device_ptr);
+
+            (*(node->backend_fn))(pool_cpu, node->t, d_a, d_b, d_out );
+            node->t->device = device_type::GPU;
             // device_type device;
         } else if (node->backend_fn == tensor_evaluate) {
-            (*(node->backend_fn))(pool_cpu, node->t);
+            float *dummy = nullptr;
+            (*(node->backend_fn))(pool_cpu, node->t, dummy, dummy, dummy);
         }
     }
     return true;
@@ -135,4 +155,25 @@ void printExecutionNode(execution_node_t *et) {
     std::cout << et->to_device_needed << "\n";
     std::cout << et->device_ptr << "\n";
     std::cout << (et->backend_fn != NULL) << "\n";
+}
+
+
+bool execution_node_to_host(execution_node_t *node) {
+    if (node == NULL || node->device_ptr == NULL || node->t == NULL) {
+        return false;
+    }
+
+    if (node->t->device == device_type::GPU) {
+        size_t size = node->t->nvalues * sizeof(float);
+        
+        cudaError_t err = cudaMemcpy(node->t->data, node->device_ptr, size, cudaMemcpyDeviceToHost);
+        
+        if (err == cudaSuccess) {
+            node->t->device = device_type::CPU; 
+        } else {
+            debug("CUDA Extraction Failed: %s\n", cudaGetErrorString(err));
+            return false;
+        }
+    }
+    return true;
 }
