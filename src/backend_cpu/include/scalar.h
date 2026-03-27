@@ -6,5 +6,3 @@ inline float tensor_float32_value(tensor_t *t) {
     assert(tensor_is_scalar(t));
     return *((float *)t->data);
 }
-
-

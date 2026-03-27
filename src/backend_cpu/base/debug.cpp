@@ -1,15 +1,14 @@
+#include "internal_header.h"
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdarg.h>
-#include "internal_header.h"
-
 
 ////////////////////
 // PUBLIC METHODS
 
 // Print expression and panic
 
-void tensor_panic(const char* file, int line, const char *expr) {
+void tensor_panic(const char *file, int line, const char *expr) {
     fprintf(stderr, "PANIC: %s:%d %s\n", file, line, expr);
     abort();
 }

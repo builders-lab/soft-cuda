@@ -1,7 +1,6 @@
-#include <stdlib.h>
-#include "string.h"
 #include "internal_header.h"
-
+#include "string.h"
+#include <stdlib.h>
 
 /////////////////////////////////////////////////
 // PUBLIC METHODS - GET VALUE
