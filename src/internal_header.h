@@ -11,6 +11,7 @@
 #include "backend_cpu/include/mul.h"
 #include "backend_cpu/include/scalar.h"
 #include "backend_cpu/include/transpose.h"
+#include "backend_cpu/include/relu.h"
 #include "./core/include/graph/DAGbuild.h"
 #include "./core/include/graph/assignBackend.h"
 

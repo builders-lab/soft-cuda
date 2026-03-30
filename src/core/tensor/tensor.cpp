@@ -155,6 +155,10 @@ bool tensor_evaluate(tensor_pool_t *pool, tensor_t *t,  [[maybe_unused]]float *d
         assert(t->a->dtype == t->b->dtype);
         success = tensor_op_broadcasting_add(pool, t);
         break;
+    case tensor_op_t::RELU:
+        assert(t->a != NULL);
+        success = tensor_op_relu(pool, t);
+        break;
     default:
         assert(false);
     }
