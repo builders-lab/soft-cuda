@@ -3,7 +3,8 @@ cp coldstart.tmp coldstart.prev 2>/dev/null
 git add ..
 
 git commit -m "chore/ Running summarizer"
-
+date=$(date +%Y-%m-%d_%H-%M-%S)
+filename="agent_summary_${date}.log"
 {
   echo "=== GIT LOG ==="
   git log --oneline -7
