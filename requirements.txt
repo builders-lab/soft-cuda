@@ -1,0 +1,9 @@
+black
+ipython
+matplotlib
+pillow
+requests
+lxml
+mercurial
+meson
+psutil
