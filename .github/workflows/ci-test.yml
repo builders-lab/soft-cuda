@@ -1,9 +1,9 @@
 name: Core Engine CI Tests
 
-# Yeh workflow tab chalega jab koi 'main' ya 'test/ci-setup' branch par push ya pull request karega
+# Yeh workflow tab chalega jab koi 'main'  branch par push ya pull request karega
 on:
   push:
-    branches: [ "main", "test/ci-setup" ]
+    branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
   workflow_dispatch:
