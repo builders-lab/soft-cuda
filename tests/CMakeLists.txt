@@ -15,6 +15,7 @@ FetchContent_MakeAvailable(googletest)
 
 add_executable(tensor_tests
   soft-cuda/tensor/test_tensor.cpp
+  test_mul.cpp
 )
 
 target_include_directories(tensor_tests PRIVATE
