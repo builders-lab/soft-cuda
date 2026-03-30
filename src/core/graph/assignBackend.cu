@@ -25,7 +25,7 @@ device_type assignDevice([[maybe_unused]] uint8_t ndims, [[maybe_unused]] uint32
     if(op == tensor_op_t::NONE) {
         return device_type::CPU;
     }
-    return device_type::GPU;
+    return device_type::CPU;
 }
 
 int32_t getTheExecutionNodeIndex(execution_node_t *node, uint32_t idx) {

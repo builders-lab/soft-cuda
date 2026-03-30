@@ -11,6 +11,7 @@ enum class tensor_op_t {
     NAIVE_MATRIX_MUL, // Multiply a by b using O(n3) solution
     ADD,              // Add a and b
     BROADCAST_ADD,    // Performs broadcasting during addition
+    RELU,             // Activation function
 };
 
 struct tensor_instance {
@@ -46,9 +47,6 @@ struct tensor_instance {
 
     // If tensor is transposed
     bool is_transposed;
-
-    // For DFS computation
-    bool evaluated;
 
     // For storing autograd result
     tensor_t *grad;
