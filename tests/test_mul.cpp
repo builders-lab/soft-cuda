@@ -37,7 +37,7 @@ TEST(NaiveMulTest, TwoByTwo) {
 
     tensor_t *t = tensor_mul_naive(pool, a, b);
     ASSERT_NE(t, nullptr);
-    ASSERT_TRUE(tensor_evaluate(pool, t));
+    ASSERT_TRUE(tensor_evaluate(pool, t, nullptr, nullptr, nullptr));
 
     float *out = (float *)tensor_get_data(t);
     EXPECT_FLOAT_EQ(out[0], 19.0f);
@@ -64,7 +64,7 @@ TEST(NaiveMulTest, RectangularMatrix) {
 
     tensor_t *t = tensor_mul_naive(pool, a, b);
     ASSERT_NE(t, nullptr);
-    ASSERT_TRUE(tensor_evaluate(pool, t));
+    ASSERT_TRUE(tensor_evaluate(pool, t, nullptr, nullptr, nullptr));
 
     float *out = (float *)tensor_get_data(t);
     EXPECT_FLOAT_EQ(out[0], 58.0f);
@@ -90,7 +90,7 @@ TEST(NaiveMulTest, IdentityMatrix) {
 
     tensor_t *t = tensor_mul_naive(pool, a, b);
     ASSERT_NE(t, nullptr);
-    ASSERT_TRUE(tensor_evaluate(pool, t));
+    ASSERT_TRUE(tensor_evaluate(pool, t, nullptr, nullptr, nullptr));
 
     float *out = (float *)tensor_get_data(t);
     EXPECT_FLOAT_EQ(out[0], 3.0f);
@@ -115,7 +115,7 @@ TEST(NaiveMulTest, ZeroMatrix) {
 
     tensor_t *t = tensor_mul_naive(pool, a, b);
     ASSERT_NE(t, nullptr);
-    ASSERT_TRUE(tensor_evaluate(pool, t));
+    ASSERT_TRUE(tensor_evaluate(pool, t, nullptr, nullptr, nullptr));
 
     float *out = (float *)tensor_get_data(t);
     for (int i = 0; i < 4; i++) {
@@ -181,16 +181,16 @@ TEST(OptimizedMulTest, MatchesNaiveTwoByTwo) {
     // Naive path
     tensor_t *naive = tensor_mul_naive(pool, a, b);
     ASSERT_NE(naive, nullptr);
-    ASSERT_TRUE(tensor_evaluate(pool, naive));
+    ASSERT_TRUE(tensor_evaluate(pool, naive, nullptr, nullptr, nullptr));
 
     // Optimized path — b ko transpose karo pehle
     tensor_t *bt = tensor_transpose(pool, b);
     ASSERT_NE(bt, nullptr);
-    ASSERT_TRUE(tensor_evaluate(pool, bt));
+    ASSERT_TRUE(tensor_evaluate(pool, bt, nullptr, nullptr, nullptr));
 
     tensor_t *opt = tensor_mul(pool, a, bt);
     ASSERT_NE(opt, nullptr);
-    ASSERT_TRUE(tensor_evaluate(pool, opt));
+    ASSERT_TRUE(tensor_evaluate(pool, opt, nullptr, nullptr, nullptr));
 
     float *n = (float *)tensor_get_data(naive);
     float *o = (float *)tensor_get_data(opt);
@@ -219,7 +219,7 @@ TEST(ScalarMulTest, BasicScalarMul) {
 
     tensor_t *t = tensor_mul(pool, a, s);
     ASSERT_NE(t, nullptr);
-    ASSERT_TRUE(tensor_evaluate(pool, t));
+    ASSERT_TRUE(tensor_evaluate(pool, t, nullptr, nullptr, nullptr));
 
     float *out = (float *)tensor_get_data(t);
     EXPECT_FLOAT_EQ(out[0], 6.0f);
@@ -243,7 +243,7 @@ TEST(ScalarMulTest, MultiplyByOne) {
 
     tensor_t *t = tensor_mul(pool, a, s);
     ASSERT_NE(t, nullptr);
-    ASSERT_TRUE(tensor_evaluate(pool, t));
+    ASSERT_TRUE(tensor_evaluate(pool, t, nullptr, nullptr, nullptr));
 
     float *out = (float *)tensor_get_data(t);
     EXPECT_FLOAT_EQ(out[0], 5.0f);
@@ -267,7 +267,7 @@ TEST(ScalarMulTest, MultiplyByZero) {
 
     tensor_t *t = tensor_mul(pool, a, s);
     ASSERT_NE(t, nullptr);
-    ASSERT_TRUE(tensor_evaluate(pool, t));
+    ASSERT_TRUE(tensor_evaluate(pool, t, nullptr, nullptr, nullptr));
 
     float *out = (float *)tensor_get_data(t);
     for (int i = 0; i < 3; i++) {
@@ -296,7 +296,7 @@ TEST(AddTest, BasicMatrixAdd) {
 
     tensor_t *t = tensor_add(pool, a, b);
     ASSERT_NE(t, nullptr);
-    ASSERT_TRUE(tensor_evaluate(pool, t));
+    ASSERT_TRUE(tensor_evaluate(pool, t, nullptr, nullptr, nullptr));
 
     float *out = (float *)tensor_get_data(t);
     EXPECT_FLOAT_EQ(out[0], 6.0f);
@@ -321,7 +321,7 @@ TEST(AddTest, AddZeroMatrix) {
 
     tensor_t *t = tensor_add(pool, a, b);
     ASSERT_NE(t, nullptr);
-    ASSERT_TRUE(tensor_evaluate(pool, t));
+    ASSERT_TRUE(tensor_evaluate(pool, t, nullptr, nullptr, nullptr));
 
     float *out = (float *)tensor_get_data(t);
     EXPECT_FLOAT_EQ(out[0], 3.0f);
@@ -348,7 +348,7 @@ TEST(AddTest, BroadcastBiasAdd) {
 
     tensor_t *t = tensor_add(pool, a, b);
     ASSERT_NE(t, nullptr);
-    ASSERT_TRUE(tensor_evaluate(pool, t));
+    ASSERT_TRUE(tensor_evaluate(pool, t, nullptr, nullptr, nullptr));
 
     float *out = (float *)tensor_get_data(t);
     EXPECT_FLOAT_EQ(out[0], 2.0f);
