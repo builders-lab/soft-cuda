@@ -1,2 +1,0 @@
-To github.com:builders-lab/soft-cuda.git
-   512d19a..deb1883  feat/matmul -> feat/matmul
