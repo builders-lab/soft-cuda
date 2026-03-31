@@ -55,7 +55,7 @@ int main() {
     
     if (oki) {
         cout << "=========================================== \n";
-        cout << "========= TACTICAL VRAM TRACE ============= \n";
+        cout << "========= VRAM TRACE ============= \n";
         
             execution_node_t *node = seq.back();
             

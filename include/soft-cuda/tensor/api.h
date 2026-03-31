@@ -141,6 +141,7 @@ size_t tensor_pool_used(tensor_pool_t *pool);
 // bool tensor_move_device(tensor_t *t, device_type target_device, tensor_pool_t *pool);
 // NEW IMPLEMENTATION
 
+// DONE
 bool execution_node_to_host(execution_node_t *node);
 ////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -217,6 +218,7 @@ tensor_t *tensor_transpose(tensor_pool_t *pool, tensor_t *a);
 tensor_t *tensor_add(tensor_pool_t *pool, tensor_t *x, tensor_t *y);
 
 // Explicit broadcasting for layers (e.g., Y = XW + b)
+// DONE
 tensor_t *tensor_add_bias(tensor_pool_t *pool, const tensor_t *xw, const tensor_t *bias);
 
 /////////////////////////////////////////////////////////////
@@ -237,6 +239,7 @@ tensor_t *tensor_add_bias(tensor_pool_t *pool, const tensor_t *xw, const tensor_
 // @params out                     Output tensor
 // @param  a                       Input tensor
 
+// DONE
 tensor_t *tensor_relu(tensor_pool_t *pool, tensor_t *a);
 
 // Compares result
@@ -250,9 +253,13 @@ bool tensor_fill_random_normal(tensor_t *t, float mean, float std_dev);
 tensor_t *tensor_cross_entropy_loss(tensor_pool_t *pool, const tensor_t *predictions,
                                     const tensor_t *targets);
 
+// ***********************************************************************************
+// TODO: HAVE TO UPDATED FUNC SIG SPEC 
 // Evalutes the operation(Forward) with depth=1
 // @return             boolean flag for status
+// DONE
 bool tensor_evaluate( tensor_pool_t *pool,tensor_t *t,  float *d_a, float *d_b, float *d_res);
+// DONE
 bool tensor_evaluate_GPU( tensor_pool_t *pool,tensor_t *t,  float *d_a, float *d_b, float *d_res);
 
 /////////////////////////////////////////////////////////////

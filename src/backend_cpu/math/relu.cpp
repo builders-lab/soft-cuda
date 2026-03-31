@@ -18,7 +18,7 @@ bool tensor_op_relu(tensor_pool_t *pool, tensor_t *t) {
     assert(pool != NULL);
     assert(t != NULL);
 
-    float* float_data = ((float*)(t->data));
+    float* float_data = ((float*)(t->a->data));
 
     for(uint32_t i = 0; i < t->nvalues; i++) {
         if (float_data[i] < 0) {
