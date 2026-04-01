@@ -18,4 +18,5 @@
 #include "./core/include/third_party/json.hpp"
 
 #include "backend_gpu/include/math/add.h"
+#include "backend_gpu/include/math/matmul.h"
 // clang-format on

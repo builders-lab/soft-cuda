@@ -194,6 +194,12 @@ bool tensor_evaluate_GPU([[maybe_unused]] tensor_pool_t *pool, [[maybe_unused]]t
         assert(t->a->dtype == t->b->dtype);
         success = tensor_add_op_cuda(t, d_a, d_b, d_res);
         break;
+    case tensor_op_t::MUL_MATRIX:
+        assert(t->a != NULL);
+        assert(t->b != NULL);
+        assert(t->a->dtype == t->b->dtype);
+        success = tensor_mul_op_cuda(t, d_a, d_b, d_res);
+        break;
     default:
         assert(false);
     }
