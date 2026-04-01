@@ -2,6 +2,8 @@
 #include "stdlib.h"
 #include "string.h"
 #include <iostream>
+#include <cstdlib>
+#include <cmath>
 
 // #define buf_size 80
 // static char buf[buf_size];
@@ -220,4 +222,31 @@ void tensor_print_data(tensor_t *t) {
         }
         std::cout << "\n";
     }
+}
+
+ // ((float*)t->data)[i]
+bool tensor_fill_random_normal(tensor_t *t, float mean, float std_dev) {
+    for(uint32_t i = 0; i < t->nvalues; i += 2) {
+        regen1:
+        float U1 = (float)(rand())/((float)RAND_MAX +1.0f);
+        if (U1 == 0) {
+            goto regen1;
+        }
+        regen2:
+        float U2 = (float)(rand())/((float)RAND_MAX +1.0f);
+        if (U2 == 0) {
+            goto regen2;
+        }
+        float R1 = sqrtf(-2 * logf(U1));
+        float K1 = 2.0f*((float)M_PI)*U2;
+
+        float Z1 = R1*cosf(K1);
+        float Z2 = R1*sinf(K1);
+
+        ((float *)t->data)[i] = mean + (std_dev*Z1);
+        if (i+1 < t->nvalues) {
+            ((float *)t->data)[i+1] = mean + (std_dev*Z2);
+        }
+    }
+    return true;
 }

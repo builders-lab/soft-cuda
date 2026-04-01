@@ -1,0 +1,3 @@
+/usr/bin/ld: /tmp/ccC7mKfg.o: in function `main':
+json.cpp:(.text+0x59): undefined reference to `readJsonToMap(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)'
+collect2: error: ld returned 1 exit status

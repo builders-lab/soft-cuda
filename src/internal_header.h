@@ -14,6 +14,8 @@
 #include "backend_cpu/include/relu.h"
 #include "./core/include/graph/DAGbuild.h"
 #include "./core/include/graph/assignBackend.h"
+#include "./core/include/JSON/json_utils.h"
+#include "./core/include/third_party/json.hpp"
 
 #include "backend_gpu/include/math/add.h"
 // clang-format on
