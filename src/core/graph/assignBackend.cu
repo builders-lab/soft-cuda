@@ -3,8 +3,9 @@
 #include <iostream>
 #include <cuda_runtime.h>
 
-void assignBackend(execution_node_t *e) {
-    device_type dt = assignDevice(e->t->ndims, e->t->dims, e->t->op);
+using json = nlohmann::json;
+void assignBackend(execution_node_t *e, json &data) {
+    device_type dt = assignDevice(e->t->ndims, e->t->dims, e->t->op, e->t->nvalues, data);
     if (dt == device_type::CPU) {
         e->backend_fn = tensor_evaluate;
         e->device_ptr = NULL;
@@ -21,11 +22,40 @@ void assignBackend(execution_node_t *e) {
  *       The reason being that it would the dangling node.
  */
 device_type assignDevice([[maybe_unused]] uint8_t ndims, [[maybe_unused]] uint32_t *dims,
-                         [[maybe_unused]] tensor_op_t op) {
+                         [[maybe_unused]] tensor_op_t op, uint32_t nvalues, json &data) {
     if(op == tensor_op_t::NONE) {
         return device_type::CPU;
     }
-    return device_type::CPU;
+    try {
+
+        if (op == tensor_op_t::MUL_MATRIX) {
+            auto params = data["ops"]["matmul"];
+            for(auto param: params) {
+                if(param["min"] <= nvalues && param["max"] > nvalues) {
+                    if(param["backend"] == "cpu") {
+                        return device_type::CPU;
+                    } else {
+                        return device_type::GPU;
+                    }
+                }
+            }
+        }
+        if (op == tensor_op_t::ADD) {
+            auto params = data["ops"]["add"];
+            for(auto param: params) {
+                if(!param.contains("min") || param["min"] <= nvalues && param["max"] > nvalues) {
+                    if(param["backend"] == "cpu") {
+                        return device_type::CPU;
+                    } else {
+                        return device_type::GPU;
+                    }
+                }
+            }
+        }
+    } catch (const std::exception& e) {
+       debug("Error: %s\n", e.what());
+    }
+    return device_type::GPU;
 }
 
 int32_t getTheExecutionNodeIndex(execution_node_t *node, uint32_t idx) {
@@ -48,8 +78,9 @@ void assignPlaceOnDeviceMemory(tensor_pool_t *pool, int32_t a_idx, std::vector<e
 
 void assignBackendGraph(tensor_pool_t *pool,std::vector<execution_node_t *> &nodes) {
     setUpParentReference(nodes);
+    json data = readJsonToMap("/home/wslarch/Documents/Coding/DEV/soft/soft-cuda/src/init/config/CONFIG.soft");
     for (auto node : nodes) {
-        assignBackend(node);
+        assignBackend(node, data);
     }
 
     for (auto node : nodes) {
