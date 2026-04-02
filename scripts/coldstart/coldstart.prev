@@ -1,0 +1,40 @@
+Based on the recent logs and the state of the TODO list, here is the reconstruction of your mental context:
+
+### 1. What I Was Doing
+I have just finished the basic implementation of **ReLU and Bias addition** (Commit `3b68101`). The project is currently transitioning from a simple tensor container to a functional compute graph. The "Cold start agent" is now functional, and I’ve been running a "summarizer" (likely an automated documentation or analysis tool) to track progress. My main goal now is **stabilizing the GPU backend assignment** and implementing core math kernels.
+
+### 2. Active TODOs (Grouped)
+
+**GPU & Backend Assignment (Critical)**
+*   **Memory Management:** Implement the logic for copying memory from parent nodes to child nodes in the GPU backend (`assignBackend.cu`).
+*   **Logic Refinement:** Build out the execution logic for the GPU part of the graph and resolve how to access execution nodes within the graph context.
+*   **Config Parser:** Implement the `CONFIG.soft` parser to allow dynamic backend assignment instead of hardcoding.
+*   **Stream Optimization:** Review the execution flow to potentially use CUDA streams for better performance.
+
+**Math Kernels (High Priority)**
+*   **Matrix Multiplication:** Currently a placeholder; needs a full implementation in `mul.cpp`.
+*   **Transpose Optimization:** Implement "Loop Tiling" in `transpose.cpp` to improve cache locality/performance on the CPU.
+
+**Technical Debt & Refactoring**
+*   **Multi-Dtype Support:** The system is currently "hardcoded" to `float32`. I need to refactor ReLU, Mul, and the GPU assignment logic to use `tensor_dtype_sizeof`.
+*   **Memory Layout:** Implement "contiguous logic" for tensors to ensure kernels don't break on sliced or non-contiguous data.
+
+### 3. Current State of the Code
+*   **Implemented:** Basic Tensor structure, ReLU, Bias addition, and the "Cold Start" agent.
+*   **Partially Done:** The GPU backend assignment (`assignBackend.cu`) exists but lacks the data-flow logic (parent-to-child memory copies).
+*   **Missing:** Matrix multiplication (the engine of the framework), multi-type support, and efficient GPU memory handling.
+
+### 4. My Likely Next Steps
+1.  **Complete the GPU Data Flow:** Finish the logic in `assignBackend.cu` that handles how children nodes fetch data from parents. This is the biggest blocker for running a full graph on GPU.
+2.  **Implement Matrix Multiplication:** The framework can't do much without `matmul`. I should implement a basic version first, then worry about optimization.
+3.  **Address the `float32` assumption:** Before the codebase gets too large, I need to start replacing `float` with the dtype abstraction I planned.
+4.  **Loop Tiling for Transpose:** A quick win for CPU performance that I've already noted down.
+
+### 5. Important Context I Should Not Forget
+*   **Dtype Assumption:** Almost everywhere in the math backends, we are assuming `float32_t`. If I start working on an op and it crashes with other types, this is why.
+*   **Backend Assignment:** The current logic for deciding if a node is CPU or GPU is still primitive. I was planning to use a "soft" configuration file to drive this.
+
+### 6. Risks / Tricky Areas
+*   **Graph Node Access:** In `assignBackend.cu`, there is uncertainty about how to correctly reference an execution node's place in the graph when we only have partial metadata.
+*   **Memory Contiguity:** If I implement kernels assuming contiguous memory without finishing the "contagious logic" TODO, I will run into silent data corruption or segfaults during slicing/reshaping.
+*   **GPU Streams:** If I move to streams for performance, I need to be careful about synchronization points so children don't start before parents finish.

@@ -1,6 +1,6 @@
 cp coldstart.tmp coldstart.prev 2>/dev/null
 
-git add ..
+git add ../..
 
 git commit -m "chore/ Running summarizer"
 date=$(date +%Y-%m-%d_%H-%M-%S)
@@ -19,6 +19,6 @@ filename="agent_summary_${date}.log"
 cat logs/${filename} > coldstart.tmp
 
 
-git add ..
+git add .
 
 git commit -m "chore/ Summarizer completion logging"
