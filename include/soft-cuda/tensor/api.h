@@ -186,6 +186,7 @@ void tensor_print_data(tensor_t *t);
 // DONE
 tensor_t *tensor_mul(tensor_pool_t *pool, tensor_t *x, tensor_t *y);
 
+tensor_t *tensor_square(tensor_pool_t *pool, tensor_t *x);
 /* The naive version of matrix multiplication
  * @param pool       Pointer to the tensor pool
  * @param x            Pointer to the tensor which will be mulptiplied
@@ -221,6 +222,16 @@ tensor_t *tensor_add(tensor_pool_t *pool, tensor_t *x, tensor_t *y);
 // DONE
 tensor_t *tensor_add_bias(tensor_pool_t *pool, const tensor_t *xw, const tensor_t *bias);
 
+/*
+ * Do matrix subtraction
+ * @param out          Pointer to the tensor where result will be stored
+ * @param x            Pointer to the tensor which will be subtracted from 
+ * @param y            Pointer to the tensor which will be subtracted
+ *
+ * @return             Returns a tensor object with operation set.
+ * */
+// DONE
+tensor_t *tensor_sub(tensor_pool_t *pool, tensor_t *a, tensor_t *b);
 /////////////////////////////////////////////////////////////
 /// DEPRECEATED tensor_mul operation handles it automatically
 // /*
@@ -242,6 +253,8 @@ tensor_t *tensor_add_bias(tensor_pool_t *pool, const tensor_t *xw, const tensor_
 // DONE
 tensor_t *tensor_relu(tensor_pool_t *pool, tensor_t *a);
 
+// DONE
+tensor_t *tensor_mean(tensor_pool_t *pool, tensor_t *a);
 // Compares result
 // return how correct we were b/w 0-1
 tensor_t *tensor_mse_loss(tensor_pool_t *pool, tensor_t *predictions, tensor_t *target);
@@ -258,7 +271,7 @@ tensor_t *tensor_cross_entropy_loss(tensor_pool_t *pool, const tensor_t *predict
 // Evalutes the operation(Forward) with depth=1
 // @return             boolean flag for status
 // DONE
-bool tensor_evaluate( tensor_pool_t *pool,tensor_t *t,  float *d_a, float *d_b, float *d_res);
+bool tensor_evaluate( tensor_pool_t *pool,tensor_t *t,  float *d_a = nullptr, float *d_b = nullptr, float *d_res= nullptr);
 // DONE
 bool tensor_evaluate_GPU( tensor_pool_t *pool,tensor_t *t,  float *d_a, float *d_b, float *d_res);
 

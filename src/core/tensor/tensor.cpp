@@ -161,6 +161,16 @@ bool tensor_evaluate(tensor_pool_t *pool, tensor_t *t,  [[maybe_unused]]float *d
         assert(t->a != NULL);
         success = tensor_op_relu(pool, t);
         break;
+    case tensor_op_t::SUB:
+        assert(t->a != NULL);
+        assert(t->b != NULL);
+        assert(t->a->dtype == t->b->dtype);
+        success = tensor_op_sub(pool, t);
+        break;
+    case tensor_op_t::MEAN:
+        assert(t->a != NULL);
+        success = tensor_op_mean(pool, t);
+        break;
     default:
         assert(false);
     }

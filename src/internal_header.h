@@ -7,6 +7,8 @@
 #include "./core/include/tensor/tensor.h"
 #include "./core/include/pool/pool.h"
 #include "backend_cpu/include/add.h"
+#include "backend_cpu/include/sub.h"
+#include "backend_cpu/include/mean.h"
 #include "backend_cpu/include/debug.h"
 #include "backend_cpu/include/mul.h"
 #include "backend_cpu/include/scalar.h"
