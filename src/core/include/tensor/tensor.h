@@ -49,7 +49,11 @@ struct tensor_instance {
 
     // If tensor is transposed
     bool is_transposed;
-
+    
+    // Writing it for common interface and ease of access
+    // grad is a data-only tensor. Fields op, a, b,
+    // stateTracker, grad_compute, grad are always NULL/zero.
+    // Only data, nvalues, ndims, dims, dtype are valid.
     // For storing autograd result
     tensor_t *grad;
 
