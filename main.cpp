@@ -1,15 +1,19 @@
 #include "soft-cuda/tensor/api.h"
-#include "soft-cuda/tensor/debug_api.h"
+// #include "soft-cuda/tensor/debug_api.h"
 #include <iostream>
 #include <vector>
 
 using namespace std;
-
 int main() {
     // Create pools
+    // CPU ALLOCATION
     tensor_pool_t *pool = tensor_pool_create(1024 * 1024);
     tensor_pool_t *pool_2 = tensor_pool_create(1024 * 1024);
+    tensor_pool_t *pool_grad_cpu = tensor_pool_create(1024 * 1024);
+    
+    // GPU ALLOCATION
     tensor_pool_t *pool_gpu = tensor_pool_create(1024 * 1024, true);
+    tensor_pool_t *pool_grad_gpu = tensor_pool_create(1024 * 1024, true);
     assert(pool != NULL);
     assert(pool_gpu != NULL);
 
@@ -31,11 +35,11 @@ int main() {
     uint32_t dims_d[] = {30, 30};
     uint32_t dims_e[] = {30, 30}; // Matched dimensions!
 
-    tensor_t *a = tensor_create(pool, tensor_dtype_t::FLOAT32_T, 2, dims_a, val_a);
-    tensor_t *b = tensor_create(pool, tensor_dtype_t::FLOAT32_T, 2, dims_b, val_b);
-    tensor_t *c = tensor_create(pool, tensor_dtype_t::FLOAT32_T, 2, dims_c, val_c);
-    tensor_t *d = tensor_create(pool, tensor_dtype_t::FLOAT32_T, 2, dims_d, val_d);
-    tensor_t *e = tensor_create(pool, tensor_dtype_t::FLOAT32_T, 2, dims_e, val_e);
+    tensor_t *a = tensor_create(pool, tensor_dtype_t::FLOAT32_T, 2, dims_a, val_a, false);
+    tensor_t *b = tensor_create(pool, tensor_dtype_t::FLOAT32_T, 2, dims_b, val_b, false);
+    tensor_t *c = tensor_create(pool, tensor_dtype_t::FLOAT32_T, 2, dims_c, val_c, false);
+    tensor_t *d = tensor_create(pool, tensor_dtype_t::FLOAT32_T, 2, dims_d, val_d, false);
+    tensor_t *e = tensor_create(pool, tensor_dtype_t::FLOAT32_T, 2, dims_e, val_e, false);
     tensor_fill_random_normal(a, 10.1, 5.7);
     tensor_fill_random_normal(b, 10.1, 5.7);
     tensor_fill_random_normal(c, 10.1, 5.7);
@@ -55,6 +59,8 @@ int main() {
     
     // Ensure assignDevice is returning device_type::GPU under the hood!
     assignBackendGraph(pool_gpu, seq);
+
+    assignGradMemory(pool_grad_cpu,pool_grad_gpu, seq);
     tensor_graph_forward_evaluate(pool, pool_gpu, seq);
     
     if (oki) {
@@ -71,6 +77,8 @@ int main() {
 
     tensor_pool_destroy(pool);
     tensor_pool_destroy(pool_2);
+    tensor_pool_destroy(pool_grad_cpu);
+    tensor_pool_destroy(pool_grad_gpu);
     tensor_pool_destroy(pool_gpu);
     return 0;
 }

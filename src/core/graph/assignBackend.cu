@@ -185,6 +185,7 @@ void printExecutionNode(execution_node_t *et) {
     tensor_print_data(et->t);
     std::cout << et->to_device_needed << "\n";
     std::cout << et->device_ptr << "\n";
+    std::cout << et->device_ptr_grad << "\n";
     std::cout << (et->backend_fn != NULL) << "\n";
 }
 
@@ -224,11 +225,10 @@ void assignGradMemory(tensor_pool_t *pool_grad_cpu, tensor_pool_t *pool_grad_gpu
 
         node->t->grad =  tensor_dtype_create(pool_grad_cpu, node->t->dtype, node->t->ndims, node->t->dims, NULL);
         
-        if(node->t->device == device_type::GPU) {
+        if(node->backend_fn == tensor_evaluate_GPU) {
             size_t size = node->t->nvalues * sizeof(float) ;
             uint32_t id;
             node->device_ptr_grad = tensor_pool_alloc(pool_grad_gpu, size, &id);
-            node->t->grad =  tensor_dtype_create(pool_grad_cpu, node->t->dtype, node->t->ndims, node->t->dims, NULL);
         }
     }
 }

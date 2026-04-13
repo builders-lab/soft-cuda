@@ -1,0 +1,38 @@
+Based on the recent commits and the transition from basic tensor operations to loss functions and backend management, here is your reconstructed context:
+
+### 1. What I Was Doing
+I was expanding the core library's mathematical capabilities and infrastructure. Specifically, I just finished implementing the **Mean Squared Error (MSE)** loss function and verified it with basic tests. Parallel to this, I began abstraction work to allow the library to **switch between different backends** (likely preparing for optimized BLAS or GPU support) and added a **naive SGEMM** (Single-precision General Matrix Multiply) as a baseline.
+
+### 2. Active TODOs (Grouped)
+**Loss Functions & Backprop**
+*   [ ] Implement the **Backward Pass** for MSE (Gradient calculation).
+*   [ ] Add **CrossEntropyLoss** (the logical next step after MSE for classification tasks).
+
+**Backend & Optimization**
+*   [ ] Optimize SGEMM: Replace the naive triple-loop with tiled or SIMD-accelerated versions.
+*   [ ] Validate Backend Switching: Ensure the `backend switch logic` correctly routes operations without data corruption.
+
+**Infrastructure**
+*   [ ] Refine `make.sh`: Standardize the `time` field reporting for benchmarking different backends.
+*   [ ] Regression testing: Ensure the ReLU data bug fixes (commits `#30`/`#31`) stay fixed during backend transitions.
+
+### 3. Current State of the Code
+*   **Implemented:** Naive SGEMM, Backend switching logic, ReLU (bug-fixed), MSE Loss (Forward pass/Smoke tests passed).
+*   **Partially Done:** Infrastructure for performance timing (added to `make.sh`).
+*   **Missing:** Optimized kernels (currently relying on naive loops), actual multi-backend support (e.g., CUDA or OpenBLAS), and automated benchmarking suite.
+
+### 4. My Likely Next Steps
+1.  **Verify the Backend Switch:** Write a test case that swaps backends mid-execution to ensure tensor data remains consistent.
+2.  **MSE Gradient:** Implement the derivative for MSE so the library can actually be used for training.
+3.  **Benchmarking:** Use the newly updated `make.sh` to get a baseline timing for the naive SGEMM vs. basic operations.
+4.  **Optimized GEMM:** Start a "fast" backend path using a more efficient matrix multiplication algorithm.
+
+### 5. Important Context I Should Not Forget
+*   **Timing Logic:** The `make.sh` changes suggest a shift in focus toward performance monitoring. Don't forget to check if the `time` command is portable across the dev environments.
+*   **ReLU Bug:** There were two consecutive commits for a "ReLU data bug." This suggests an edge case (likely related to memory alignment or in-place modifications) that might reappear in other activation functions.
+*   **Backend Abstraction:** The "switch logic" implies that tensors now need to be aware of their "location" or "engine" before operations are called.
+
+### 6. Risks / Tricky Areas
+*   **Backend Divergence:** If the naive SGEMM and a future optimized version yield slightly different precision results, the smoke tests might fail on different backends.
+*   **Pointer Handling in Switching:** Ensure that switching backends doesn't lead to memory leaks or double-frees if pointers are being re-allocated or cast during the switch.
+*   **The ReLU Fix:** Since it took two tries to fix (commits `00c6494` to `28377df`), the logic there might be fragile. Check this area first if unexpected data corruption occurs in deeper networks.

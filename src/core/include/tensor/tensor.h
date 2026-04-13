@@ -65,7 +65,7 @@ struct tensor_instance {
 // a scalar is created. If elems is NULL then the tensor is created with zeros.
 // If elems is not NULL then it is assigned as initial values.
 tensor_t *tensor_dtype_create(tensor_pool_t *pool, tensor_dtype_t dtype, uint32_t num_dims,
-                              uint32_t *dims, void *elems);
+                              uint32_t *dims, void *elems, bool grad_status = true);
 
 // Evaluate the tensor, return true on success
 bool tensor_evaluate( tensor_pool_t *pool,tensor_t *t,  float *d_a, float *d_b, float *d_res);
@@ -74,5 +74,5 @@ bool tensor_evaluate( tensor_pool_t *pool,tensor_t *t,  float *d_a, float *d_b, 
 size_t tensor_dtype_sizeof(tensor_dtype_t dtype);
 
 tensor_t *tensor_create(tensor_pool_t *pool, tensor_dtype_t dtype, uint32_t num_dims,
-                        uint32_t *dims, void *elems);
+                        uint32_t *dims, void *elems, bool grad_status);
 #endif // !PRIVATE_TENSOR_H

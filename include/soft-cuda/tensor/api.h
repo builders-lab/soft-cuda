@@ -84,7 +84,7 @@ uint32_t tensor_id(tensor_t *t);
  */
 // DONE
 tensor_t *tensor_create(tensor_pool_t *pool, tensor_dtype_t dtype, uint32_t num_dims,
-                        uint32_t *dims, void *elems);
+                        uint32_t *dims, void *elems, bool grad_status = true);
 
 /*
  * Establish a new memory arena
@@ -334,6 +334,7 @@ bool verifyIfDAG(tensor_pool_t *pool, tensor_t *t, std::vector<execution_node_t 
 // DONE
 void assignBackendGraph(tensor_pool_t *pool,std::vector<execution_node_t *> &nodes);
 
+void assignGradMemory(tensor_pool_t *pool_grad_cpu, tensor_pool_t *pool_grad_gpu, std::vector<execution_node_t *> &nodes);
 /* @params  Take execution_node_t which you wanna know
  * @returns the postion of the execution_node_t after verifyIfDAG
  * */
