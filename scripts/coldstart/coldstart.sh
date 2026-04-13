@@ -11,7 +11,7 @@ filename="agent_summary_${date}.log"
   echo "=== GIT DIFF ==="
   git diff HEAD
   echo "=== TODO ==="
-  grep -r TODO ../src/ 2>/dev/null
+  grep -r TODO ../../src 2>/dev/null
   echo "=== PREVIOUS SESSION SUMMARY ==="
   [ -f coldstart.prev ] && cat coldstart.prev
 } | python coldstart_agent.py > logs/${filename}
