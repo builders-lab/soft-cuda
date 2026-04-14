@@ -28,7 +28,7 @@ bool backprop__(std::vector<execution_node_t *> &nodes) {
         }
     }
 }
-
+// TODO: To implement each and every kernel for each op backprop
 bool backprop_cpu(execution_node_t *node) {
     assert(node->t != NULL);
     bool success = false;
@@ -102,26 +102,26 @@ bool backprop_cpu(execution_node_t *node) {
 /*************************************************************/
 /*************************************************************/
 /*************************************************************/
-// TODO: Implement GPU module
+// TODO: Implement GPU GRADIENT module
 bool backprop_gpu(execution_node_t *node) {
     assert(pool != NULL);
     assert(t != NULL);
     bool success = false;
 
     switch (t->op) {
-    case tensor_op_t::NONE:
+    case tensor_grad_t::NONE:
         success = true;
         break;
-    case tensor_op_t::CAST:
+    case tensor_grad_op_t::CAST:
         break;
         // TODO: Implement here
-    case tensor_op_t::ADD:
+    case tensor_grad_op_t::ADD:
         assert(t->a != NULL);
         assert(t->b != NULL);
         assert(t->a->dtype == t->b->dtype);
         success = tensor_add_op_cuda(t, d_a, d_b, d_res);
         break;
-    case tensor_op_t::MUL_MATRIX:
+    case tensor_grad_op_t::MUL_MATRIX:
         assert(t->a != NULL);
         assert(t->b != NULL);
         assert(t->a->dtype == t->b->dtype);
