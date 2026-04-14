@@ -1,5 +1,5 @@
 #include "internal_header.h"
-#include "vector"
+// #include "vector"
 #include <iostream>
 #include <cuda_runtime.h>
 
@@ -210,10 +210,13 @@ bool execution_node_to_host(execution_node_t *node) {
     return true;
 }
 
-// TODO: Will need to edit the tensor create func signature so to allow the user to assign grad_compute boolean.
-// What we can do is keep it default and then have user declare leaf to NULL. As otherwise it would be difficult to implement the 
-// propogation logic 
-
+// What we can do is keep it default and then have user declare leaf to NULL. As otherwise it would
+// be difficult to implement the propogation logic
+// NOTE: Since we are making the memory here and device_ptr_grad is here to what we will do is take
+// the whole execution node and then pass it to the eagar OPS and then we will see if it does have
+// `device_ptr_grad` if so then it's fine right other wise we will directly write to
+// node->t->grad->data right. Then after all the ops we will make a new function which will scan the
+// whole graph and then if it sees the device_ptr_grad is not null it will initiate data transfer.
 void assignGradMemory(tensor_pool_t *pool_grad_cpu, tensor_pool_t *pool_grad_gpu, std::vector<execution_node_t *> &nodes) {
     for(auto &node : nodes) {
         // We are not assigning grad instance during tensor create.
@@ -224,7 +227,7 @@ void assignGradMemory(tensor_pool_t *pool_grad_cpu, tensor_pool_t *pool_grad_gpu
         if(node->t->grad_compute == false) continue;
 
         node->t->grad =  tensor_dtype_create(pool_grad_cpu, node->t->dtype, node->t->ndims, node->t->dims, NULL);
-        
+
         if(node->backend_fn == tensor_evaluate_GPU) {
             size_t size = node->t->nvalues * sizeof(float) ;
             uint32_t id;
