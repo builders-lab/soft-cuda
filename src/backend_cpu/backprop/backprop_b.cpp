@@ -28,73 +28,74 @@ bool backprop__(std::vector<execution_node_t *> &nodes) {
         }
     }
 }
-// TODO: To implement each and every kernel for each op backprop
+
 bool backprop_cpu(execution_node_t *node) {
+
     assert(node->t != NULL);
     bool success = false;
 
     switch (t->op) {
-    case tensor_grad_op_t::NONE:
+    case tensor_op_t::NONE:
         success = true;
         break;
-    case tensor_grad_op_t::CAST:
+    case tensor_op_t::CAST:
         break;
         // TODO: Implement here
-    case tensor_grad_op_t::MUL_MATRIX:
+    case tensor_op_t::MUL_MATRIX:
         assert(t->a != NULL);
         assert(t->b != NULL);
         assert(t->a->dtype == t->b->dtype);
-        success = tensor_mul_op_matrix(pool, t);
+        success = tensor_mul_grad_op_matrix(pool, t);
         break;
-    case tensor_grad_op_t::MUL_SCALAR:
+    case tensor_op_t::MUL_SCALAR:
         assert(t->a != NULL);
         assert(t->b != NULL);
         assert(t->a->dtype == t->b->dtype);
-        success = tensor_mul_op_scalar(pool, t);
+        success = tensor_mul_grad_op_scalar(pool, t);
         break;
-    case tensor_grad_op_t::TRANSPOSE:
+    case tensor_op_t::TRANSPOSE:
         assert(t->a != NULL);
-        success = tensor_tranpose_op_matrix(pool, t);
+        success = tensor_tranpose_grad_op_matrix(pool, t);
         break;
-    case tensor_grad_op_t::NAIVE_MATRIX_MUL:
-        assert(t->a != NULL);
-        assert(t->b != NULL);
-        assert(t->a->dtype == t->b->dtype);
-        success = tensor_mul_op_matrix_naive(pool, t);
-        break;
-    case tensor_grad_op_t::ADD:
+    case tensor_op_t::NAIVE_MATRIX_MUL:
         assert(t->a != NULL);
         assert(t->b != NULL);
         assert(t->a->dtype == t->b->dtype);
-        success = tensor_op_add(pool, t);
+        success = tensor_mul_grad_op_matrix_naive(pool, t);
         break;
-    case tensor_grad_op_t::BROADCAST_ADD:
+    case tensor_op_t::ADD:
         assert(t->a != NULL);
         assert(t->b != NULL);
         assert(t->a->dtype == t->b->dtype);
-        success = tensor_op_broadcasting_add(pool, t);
+        success = tensor_grad_op_add(pool, t);
         break;
-    case tensor_grad_op_t::RELU:
-        assert(t->a != NULL);
-        success = tensor_op_relu(pool, t);
-        break;
-    case tensor_grad_op_t::SUB:
+    case tensor_op_t::BROADCAST_ADD:
         assert(t->a != NULL);
         assert(t->b != NULL);
         assert(t->a->dtype == t->b->dtype);
-        success = tensor_op_sub(pool, t);
+        success = tensor_grad_op_broadcasting_add(pool, t);
         break;
-    case tensor_grad_op_t::MEAN:
+    case tensor_op_t::RELU:
         assert(t->a != NULL);
-        success = tensor_op_mean(pool, t);
+        success = tensor_grad_op_relu(pool, t);
+        break;
+    case tensor_op_t::SUB:
+        assert(t->a != NULL);
+        assert(t->b != NULL);
+        assert(t->a->dtype == t->b->dtype);
+        success = tensor_grad_op_sub(pool, t);
+        break;
+    case tensor_op_t::MEAN:
+        assert(t->a != NULL);
+        success = tensor_grad_op_mean(pool, t);
         break;
     default:
         assert(false);
     }
     if (success) {
-        debug("tensor_evaluate: success\n");
+        debug("backprop_cpu: success\n");
     } else {
-        debug("tensor_evaluate: FUBAR\n");
+        debug("backprop_cpu: FUBAR\n");
     }
     return success;
 }
@@ -102,38 +103,37 @@ bool backprop_cpu(execution_node_t *node) {
 /*************************************************************/
 /*************************************************************/
 /*************************************************************/
-// TODO: Implement GPU GRADIENT module
+// TODO: Implement GPU module
 bool backprop_gpu(execution_node_t *node) {
-    assert(pool != NULL);
-    assert(t != NULL);
+    assert(node->t != NULL);
     bool success = false;
 
-    switch (t->op) {
-    case tensor_grad_t::NONE:
+    switch (node->t->op) {
+    case tensor_op_t::NONE:
         success = true;
         break;
-    case tensor_grad_op_t::CAST:
+    case tensor_op_t::CAST:
         break;
         // TODO: Implement here
-    case tensor_grad_op_t::ADD:
+    case tensor_op_t::ADD:
         assert(t->a != NULL);
         assert(t->b != NULL);
         assert(t->a->dtype == t->b->dtype);
-        success = tensor_add_op_cuda(t, d_a, d_b, d_res);
+        success = tensor_grad_add_op_cuda(t, d_a, d_b, d_res);
         break;
-    case tensor_grad_op_t::MUL_MATRIX:
+    case tensor_op_t::MUL_MATRIX:
         assert(t->a != NULL);
         assert(t->b != NULL);
         assert(t->a->dtype == t->b->dtype);
-        success = tensor_mul_op_cuda(t, d_a, d_b, d_res);
+        success = tensor_grad_mul_op_cuda(t, d_a, d_b, d_res);
         break;
     default:
         assert(false);
     }
     if (success) {
-        debug("tensor_evaluate_GPU: success\n");
+        debug("backprop_gpu: success\n");
     } else {
-        debug("tensor_evaluate_GPU: FUBAR\n");
+        debug("backprop_gpu: FUBAR\n");
     }
     return success;
 }
