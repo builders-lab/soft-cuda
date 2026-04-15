@@ -2,26 +2,26 @@
 -- Generating done (0.0s)
 -- Build files have been written to: /home/wslarch/Documents/Coding/DEV/soft/soft-cuda/build
 
-real	0m0.317s
-user	0m0.134s
-sys	0m0.177s
+real	0m0.356s
+user	0m0.157s
+sys	0m0.181s
 [  5%] Built target gtest
-[ 21%] Building CXX object CMakeFiles/soft_lib.dir/src/backend_cpu/math/mse.cpp.o
-[ 21%] Building CXX object CMakeFiles/soft_lib.dir/src/backend_cpu/math/bias_add.cpp.o
-[ 21%] Building CXX object CMakeFiles/soft_lib.dir/src/backend_cpu/math/mean.cpp.o
-[ 21%] Building CXX object CMakeFiles/soft_lib.dir/src/backend_cpu/backprop/backprop_b.cpp.o
-[ 21%] Building CXX object CMakeFiles/soft_lib.dir/src/backend_cpu/base/debug.cpp.o
-[ 21%] Building CXX object CMakeFiles/soft_lib.dir/src/backend_cpu/math/mul.cpp.o
+[ 10%] Building CXX object CMakeFiles/soft_lib.dir/src/backend_cpu/base/debug.cpp.o
+[ 10%] Building CXX object CMakeFiles/soft_lib.dir/src/backend_cpu/math/bias_add.cpp.o
+[ 13%] Building CXX object CMakeFiles/soft_lib.dir/src/backend_cpu/math/mean.cpp.o
+[ 16%] Building CXX object CMakeFiles/soft_lib.dir/src/backend_cpu/math/mse.cpp.o
+[ 18%] Building CXX object CMakeFiles/soft_lib.dir/src/backend_cpu/math/mul.cpp.o
+[ 21%] Building CXX object CMakeFiles/soft_lib.dir/src/backend_cpu/math/relu.cpp.o
 [ 24%] Building CXX object CMakeFiles/soft_lib.dir/src/backend_cpu/math/add.cpp.o
-[ 27%] Building CXX object CMakeFiles/soft_lib.dir/src/backend_cpu/math/relu.cpp.o
+[ 29%] Building CXX object CMakeFiles/soft_lib.dir/src/backend_cpu/backprop/backprop_b.cpp.o
 [ 29%] Building CXX object CMakeFiles/soft_lib.dir/src/backend_cpu/math/scalar.cpp.o
 [ 32%] Building CXX object CMakeFiles/soft_lib.dir/src/backend_cpu/math/square.cpp.o
-[ 37%] Building CXX object CMakeFiles/soft_lib.dir/src/backend_cpu/math/transpose.cpp.o
+[ 35%] Building CXX object CMakeFiles/soft_lib.dir/src/backend_cpu/math/transpose.cpp.o
 [ 37%] Building CXX object CMakeFiles/soft_lib.dir/src/backend_cpu/math/sub.cpp.o
 [ 40%] Building CUDA object CMakeFiles/soft_lib.dir/src/backend_gpu/math/matmul.cu.o
 [ 43%] Building CUDA object CMakeFiles/soft_lib.dir/src/backend_gpu/math/add.cu.o
-[ 48%] Built target gmock
-[ 54%] Built target gtest_main
+[ 48%] Built target gtest_main
+[ 54%] Built target gmock
 [ 56%] Building CXX object CMakeFiles/soft_lib.dir/src/core/JSON/json_utils.cpp.o
 [ 62%] Built target gmock_main
 [ 64%] Building CXX object CMakeFiles/soft_lib.dir/src/core/graph/DAGbuild.cpp.o
@@ -29,18 +29,16 @@ sys	0m0.177s
 [ 70%] Building CXX object CMakeFiles/soft_lib.dir/src/core/graph/train.cpp.o
 [ 72%] Building CUDA object CMakeFiles/soft_lib.dir/src/core/pool/pool.cu.o
 [ 75%] Building CXX object CMakeFiles/soft_lib.dir/src/core/tensor/tensor.cpp.o
-[ 78%] Linking CUDA device code CMakeFiles/soft_lib.dir/cmake_device_link.o
-[ 81%] Linking CXX shared library libsoft_lib.so
-[ 83%] Built target soft_lib
-[ 86%] Building CXX object CMakeFiles/soft.dir/main.cpp.o
-[ 94%] Building CXX object tests/CMakeFiles/tensor_tests.dir/test_ops.cpp.o
-[ 94%] Building CXX object tests/CMakeFiles/tensor_tests.dir/soft-cuda/tensor/test_tensor.cpp.o
-[ 94%] Building CXX object tests/CMakeFiles/tensor_tests.dir/test_mul.cpp.o
-[ 97%] Linking CXX executable soft
-[ 97%] Built target soft
-[100%] Linking CXX executable tensor_tests
-[100%] Built target tensor_tests
+/home/wslarch/Documents/Coding/DEV/soft/soft-cuda/src/core/tensor/tensor.cpp: In function ‘bool tensor_evaluate(tensor_pool_t*, tensor_t*, float*, float*, float*)’:
+/home/wslarch/Documents/Coding/DEV/soft/soft-cuda/src/core/tensor/tensor.cpp:176:19: error: ‘tensor_op_square’ was not declared in this scope; did you mean ‘tensor_square’?
+  176 |         success = tensor_op_square(pool, t);
+      |                   ^~~~~~~~~~~~~~~~
+      |                   tensor_square
+make[2]: *** [CMakeFiles/soft_lib.dir/build.make:363: CMakeFiles/soft_lib.dir/src/core/tensor/tensor.cpp.o] Error 1
+make[2]: *** Waiting for unfinished jobs....
+make[1]: *** [CMakeFiles/Makefile2:181: CMakeFiles/soft_lib.dir/all] Error 2
+make: *** [Makefile:146: all] Error 2
 
-real	0m14.130s
-user	1m18.485s
-sys	0m19.782s
+real	0m11.154s
+user	1m11.334s
+sys	0m16.624s

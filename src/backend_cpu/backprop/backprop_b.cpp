@@ -117,6 +117,10 @@ bool backprop_cpu(execution_node_t *node) {
         assert(node->t->a != NULL);
         success = tensor_grad_op_mean(node);
         break;
+    case tensor_op_t::SQUARE:
+        assert(node->t->a != NULL);
+        success = tensor_grad_op_square(node);
+        break;
     default:
         assert(false);
     }
@@ -174,7 +178,7 @@ bool tensor_grad_op_broadcasting_add(execution_node_t *node) {
     // We are assuming that b would be the broadcasted array
     uint32_t val = node->t->nvalues;
     for (uint32_t i = 0; i < val; i++) {
-        g_a[i] = g_out[i];
+        g_a[i] += g_out[i];
     }
 
     // For broadcasting we accumulate btw
@@ -323,3 +327,21 @@ bool tensor_mul_grad_op_matrix_naive(execution_node_t *node) {
     }
     return true;
 }
+
+bool tensor_grad_op_square(execution_node_t *node) {
+    tensor_t *out_grad = node->t->grad;
+    tensor_t *a        = node->t->a;
+    assert(out_grad != NULL && a != NULL);
+    assert(a->grad != NULL);
+
+    float *g_out  = (float *)out_grad->data;
+    float *g_a    = (float *)a->grad->data;
+    float *a_data = (float *)a->data;   
+    uint32_t n    = node->t->nvalues;
+
+    for (uint32_t i = 0; i < n; i++) {
+        g_a[i] += g_out[i] * 2.0f * a_data[i];
+    }
+    return true;
+}
+

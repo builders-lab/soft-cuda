@@ -14,6 +14,7 @@ enum class tensor_op_t {
     RELU,             // Activation function
     SUB,              // Subtract two tensor of same shape
     MEAN,             // Returns a scalar value mean of the tensor
+    SQUARE,           // Square the tensor element-wise
 };
 
 struct tensor_instance {

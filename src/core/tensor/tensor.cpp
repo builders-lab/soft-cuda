@@ -171,6 +171,10 @@ bool tensor_evaluate(tensor_pool_t *pool, tensor_t *t,  [[maybe_unused]]float *d
         assert(t->a != NULL);
         success = tensor_op_mean(pool, t);
         break;
+    case tensor_op_t::SQUARE:
+        assert(t->a != NULL);
+        success = tensor_op_square(pool, t);
+        break;
     default:
         assert(false);
     }

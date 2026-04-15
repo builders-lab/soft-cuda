@@ -23,3 +23,5 @@ bool tensor_mul_grad_op_scalar(execution_node_t *node);
 bool tensor_tranpose_grad_op_matrix(execution_node_t *node);
 
 bool tensor_mul_grad_op_matrix_naive(execution_node_t *node);
+
+bool tensor_grad_op_square(execution_node_t *node);

@@ -43,8 +43,8 @@ int main() {
     tensor_t *b1 = tensor_create(pool, tensor_dtype_t::FLOAT32_T, 2, dims_b1, val_b1);
     tensor_t *b2 = tensor_create(pool, tensor_dtype_t::FLOAT32_T, 2, dims_b2, val_b2);
 
-    tensor_fill_random_normal(W1, 1, 0.01);
-    tensor_fill_random_normal(W2, 1.1, 0.01);
+    tensor_fill_random_normal(W1, 0, 0.01);
+    tensor_fill_random_normal(W2, 0.1, 0.01);
     tensor_fill_random_normal(b1, 0.1, 0.01);
     tensor_fill_random_normal(b2, 0.11, 0.01);
     

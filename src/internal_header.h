@@ -10,6 +10,7 @@
 #include "backend_cpu/include/sub.h"
 #include "backend_cpu/include/mean.h"
 #include "backend_cpu/include/debug.h"
+#include "backend_cpu/include/square.h"
 #include "backend_cpu/include/mul.h"
 #include "backend_cpu/include/scalar.h"
 #include "backend_cpu/include/transpose.h"
