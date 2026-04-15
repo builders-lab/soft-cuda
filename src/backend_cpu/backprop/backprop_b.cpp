@@ -149,15 +149,14 @@ bool tensor_grad_op_add(execution_node_t *node) {
     tensor_t *b = node->t->b;
 
     assert(out_grad != NULL && a != NULL && b != NULL);
-    assert(a->grad != NULL && b->grad != NULL);
     float *g_out = (float *)out_grad->data;
-    float *g_a = (float *)a->grad;
-    float *g_b = (float *)b->grad;
+    float *g_a = a->grad != NULL ? (float *)a->grad->data : NULL;
+    float *g_b = b->grad != NULL ? (float *)b->grad->data : NULL;
     uint32_t n = node->t->nvalues;
 
     for (uint32_t i = 0; i < n; i++) {
-        g_a[i] += g_out[i];
-        g_b[i] += g_out[i];
+        if (g_a) g_a[i] += g_out[i];
+        if (g_b) g_b[i] += g_out[i];
     }
     return true;
 }
@@ -168,25 +167,28 @@ bool tensor_grad_op_broadcasting_add(execution_node_t *node) {
     tensor_t *b = node->t->b;
 
     assert(out_grad != NULL && a != NULL && b != NULL);
-    assert(a->grad != NULL && b->grad != NULL);
     float *g_out = (float *)out_grad->data;
-    float *g_a = (float *)a->grad;
-    float *g_b = (float *)b->grad;
+    float *g_a = a->grad != NULL ? (float *)a->grad->data : NULL;
+    float *g_b = b->grad != NULL ? (float *)b->grad->data : NULL;
 
     uint32_t rows = node->t->dims[0];
     uint32_t cols = node->t->dims[1];
     // We are assuming that b would be the broadcasted array
     uint32_t val = node->t->nvalues;
-    for (uint32_t i = 0; i < val; i++) {
-        g_a[i] += g_out[i];
+    if (g_a) {
+        for (uint32_t i = 0; i < val; i++) {
+            g_a[i] += g_out[i];
+        }
     }
 
-    // For broadcasting we accumulate btw
-    for (uint32_t i = 0; i < rows; i++) {
-      for (uint32_t j = 0; j < cols; j++) {
-        uint32_t b_idx = i * b->broadcast_stride[0]  + j * b->broadcast_stride[1];
-        g_b[b_idx] += g_out[i*cols + j];
-      }
+    if (g_b) {
+        // For broadcasting we accumulate btw
+        for (uint32_t i = 0; i < rows; i++) {
+          for (uint32_t j = 0; j < cols; j++) {
+            uint32_t b_idx = i * b->broadcast_stride[0]  + j * b->broadcast_stride[1];
+            g_b[b_idx] += g_out[i*cols + j];
+          }
+        }
     }
     return true;
 }
@@ -196,16 +198,15 @@ bool tensor_grad_op_sub(execution_node_t *node) {
     tensor_t *a        = node->t->a;
     tensor_t *b        = node->t->b;
     assert(out_grad != NULL && a != NULL && b != NULL);
-    assert(a->grad != NULL && b->grad != NULL);
 
     float *g_out = (float *)out_grad->data;
-    float *g_a   = (float *)a->grad->data;
-    float *g_b   = (float *)b->grad->data;
+    float *g_a   = a->grad != NULL ? (float *)a->grad->data : NULL;
+    float *g_b   = b->grad != NULL ? (float *)b->grad->data : NULL;
     uint32_t n   = node->t->nvalues;
 
     for (uint32_t i = 0; i < n; i++) {
-        g_a[i] += g_out[i];
-        g_b[i] -= g_out[i];
+        if (g_a) g_a[i] += g_out[i];
+        if (g_b) g_b[i] -= g_out[i];
     }
     return true;
 }
@@ -216,16 +217,17 @@ bool tensor_grad_op_relu(execution_node_t *node) {
     tensor_t *out_grad = node->t->grad;
     tensor_t *a        = node->t->a;
     assert(out_grad != NULL && a != NULL);
-    assert(a->grad != NULL);
 
-    float *g_out  = (float *)out_grad->data;
-    float *g_a    = (float *)a->grad->data;
-    float *a_data = (float *)a->data;   
-    uint32_t n    = node->t->nvalues;
+    if (a->grad != NULL) {
+        float *g_out  = (float *)out_grad->data;
+        float *g_a    = (float *)a->grad->data;
+        float *a_data = (float *)a->data;   
+        uint32_t n    = node->t->nvalues;
 
-    for (uint32_t i = 0; i < n; i++) {
-        if (a_data[i] > 0.0f) {
-            g_a[i] += g_out[i];
+        for (uint32_t i = 0; i < n; i++) {
+            if (a_data[i] > 0.0f) {
+                g_a[i] += g_out[i];
+            }
         }
     }
     return true;
@@ -235,16 +237,17 @@ bool tensor_grad_op_mean(execution_node_t *node) {
     tensor_t *out_grad = node->t->grad;
     tensor_t *a        = node->t->a;
     assert(out_grad != NULL && a != NULL);
-    assert(a->grad != NULL);
 
-    // out->grad is a scalar — one value
-    float upstream    = ((float *)out_grad->data)[0];
-    float *g_a        = (float *)a->grad->data;
-    uint32_t n        = a->nvalues;
-    float scale       = upstream / (float)n;
+    if (a->grad != NULL) {
+        // out->grad is a scalar — one value
+        float upstream    = ((float *)out_grad->data)[0];
+        float *g_a        = (float *)a->grad->data;
+        uint32_t n        = a->nvalues;
+        float scale       = upstream / (float)n;
 
-    for (uint32_t i = 0; i < n; i++) {
-        g_a[i] += scale;
+        for (uint32_t i = 0; i < n; i++) {
+            g_a[i] += scale;
+        }
     }
     return true;
 }
@@ -254,15 +257,16 @@ bool tensor_mul_grad_op_scalar(execution_node_t *node) {
     tensor_t *a        = node->t->a;
     tensor_t *b        = node->t->b;   
     assert(out_grad != NULL && a != NULL && b != NULL);
-    assert(a->grad != NULL);
 
-    float *g_out  = (float *)out_grad->data;
-    float *g_a    = (float *)a->grad->data;
-    float  s      = tensor_float32_value(b);
-    uint32_t n    = a->nvalues;
+    if (a->grad != NULL) {
+        float *g_out  = (float *)out_grad->data;
+        float *g_a    = (float *)a->grad->data;
+        float  s      = tensor_float32_value(b);
+        uint32_t n    = a->nvalues;
 
-    for (uint32_t i = 0; i < n; i++) {
-        g_a[i] += g_out[i] * s;
+        for (uint32_t i = 0; i < n; i++) {
+            g_a[i] += g_out[i] * s;
+        }
     }
     return true;
 }
@@ -272,16 +276,17 @@ bool tensor_tranpose_grad_op_matrix(execution_node_t *node) {
     tensor_t *out_grad = node->t->grad;
     tensor_t *a        = node->t->a;
     assert(out_grad != NULL && a != NULL);
-    assert(a->grad != NULL);
 
-    uint32_t rows    = a->dims[0];   
-    uint32_t cols    = a->dims[1];  
-    float *g_out     = (float *)out_grad->data;
-    float *g_a       = (float *)a->grad->data;
+    if (a->grad != NULL) {
+        uint32_t rows    = a->dims[0];   
+        uint32_t cols    = a->dims[1];  
+        float *g_out     = (float *)out_grad->data;
+        float *g_a       = (float *)a->grad->data;
 
-    for (uint32_t i = 0; i < rows; i++) {
-        for (uint32_t j = 0; j < cols; j++) {
-            g_a[i * cols + j] += g_out[j * rows + i];
+        for (uint32_t i = 0; i < rows; i++) {
+            for (uint32_t j = 0; j < cols; j++) {
+                g_a[i * cols + j] += g_out[j * rows + i];
+            }
         }
     }
     return true;
@@ -292,7 +297,6 @@ bool tensor_mul_grad_op_matrix_naive(execution_node_t *node) {
     tensor_t *a        = node->t->a;
     tensor_t *b        = node->t->b;
     assert(out_grad != NULL && a != NULL && b != NULL);
-    assert(a->grad != NULL && b->grad != NULL);
 
     uint32_t M = a->dims[0];
     uint32_t K = a->dims[1];
@@ -301,28 +305,32 @@ bool tensor_mul_grad_op_matrix_naive(execution_node_t *node) {
     float *g_out = (float *)out_grad->data;    // (M, N)
     float *a_data = (float *)a->data;          // (M, K)
     float *b_data = (float *)b->data;          // (K, N)
-    float *g_a    = (float *)a->grad->data;    // (M, K)
-    float *g_b    = (float *)b->grad->data;    // (K, N)
+    float *g_a    = a->grad != NULL ? (float *)a->grad->data : NULL;    // (M, K)
+    float *g_b    = b->grad != NULL ? (float *)b->grad->data : NULL;    // (K, N)
 
-    // dL/dA[i,k] += sum_j  dL/dOut[i,j] * B[k,j]
-    for (uint32_t i = 0; i < M; i++) {
-        for (uint32_t k = 0; k < K; k++) {
-            float sum = 0.0f;
-            for (uint32_t j = 0; j < N; j++) {
-                sum += g_out[i * N + j] * b_data[k * N + j];
+    if (g_a) {
+        // dL/dA[i,k] += sum_j  dL/dOut[i,j] * B[k,j]
+        for (uint32_t i = 0; i < M; i++) {
+            for (uint32_t k = 0; k < K; k++) {
+                float sum = 0.0f;
+                for (uint32_t j = 0; j < N; j++) {
+                    sum += g_out[i * N + j] * b_data[k * N + j];
+                }
+                g_a[i * K + k] += sum;
             }
-            g_a[i * K + k] += sum;
         }
     }
 
-    // dL/dB[k,j] += sum_i  A[i,k] * dL/dOut[i,j]
-    for (uint32_t k = 0; k < K; k++) {
-        for (uint32_t j = 0; j < N; j++) {
-            float sum = 0.0f;
-            for (uint32_t i = 0; i < M; i++) {
-                sum += a_data[i * K + k] * g_out[i * N + j];
+    if (g_b) {
+        // dL/dB[k,j] += sum_i  A[i,k] * dL/dOut[i,j]
+        for (uint32_t k = 0; k < K; k++) {
+            for (uint32_t j = 0; j < N; j++) {
+                float sum = 0.0f;
+                for (uint32_t i = 0; i < M; i++) {
+                    sum += a_data[i * K + k] * g_out[i * N + j];
+                }
+                g_b[k * N + j] += sum;
             }
-            g_b[k * N + j] += sum;
         }
     }
     return true;
@@ -332,16 +340,18 @@ bool tensor_grad_op_square(execution_node_t *node) {
     tensor_t *out_grad = node->t->grad;
     tensor_t *a        = node->t->a;
     assert(out_grad != NULL && a != NULL);
-    assert(a->grad != NULL);
 
-    float *g_out  = (float *)out_grad->data;
-    float *g_a    = (float *)a->grad->data;
-    float *a_data = (float *)a->data;   
-    uint32_t n    = node->t->nvalues;
+    if (a->grad != NULL) {
+        float *g_out  = (float *)out_grad->data;
+        float *g_a    = (float *)a->grad->data;
+        float *a_data = (float *)a->data;   
+        uint32_t n    = node->t->nvalues;
 
-    for (uint32_t i = 0; i < n; i++) {
-        g_a[i] += g_out[i] * 2.0f * a_data[i];
+        for (uint32_t i = 0; i < n; i++) {
+            g_a[i] += g_out[i] * 2.0f * a_data[i];
+        }
     }
     return true;
 }
+
 
