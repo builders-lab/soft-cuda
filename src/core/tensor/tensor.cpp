@@ -235,6 +235,10 @@ uint8_t tensor_get_ndims(tensor_t *t) { return t->ndims; }
 uint32_t *tensor_get_dims(tensor_t *t) { return t->dims; }
 
 void tensor_print_data(tensor_t *t) {
+    if (t->ndims == 0) {
+        std::cout << ((float *)t->data)[0] << "\n";
+        return;
+    }
     for (uint32_t i = 0; i < t->dims[0]; i++) {
         for (uint32_t j = 0; j < t->dims[1]; j++) {
             uint32_t index = i * t->dims[1] + j;

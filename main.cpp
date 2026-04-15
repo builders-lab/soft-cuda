@@ -36,8 +36,8 @@ int main() {
     uint32_t dims_b2[] = {1, 1};
     uint32_t dims_W2[] = {2, 1};
     
-    tensor_t *X  = tensor_create(pool, tensor_dtype_t::FLOAT32_T, 2, dims_X,  val_X);
-    tensor_t *Y  = tensor_create(pool, tensor_dtype_t::FLOAT32_T, 2, dims_Y,  val_Y);
+    tensor_t *X  = tensor_create(pool, tensor_dtype_t::FLOAT32_T, 2, dims_X,  val_X, false);
+    tensor_t *Y  = tensor_create(pool, tensor_dtype_t::FLOAT32_T, 2, dims_Y,  val_Y, false);
     tensor_t *W1 = tensor_create(pool, tensor_dtype_t::FLOAT32_T, 2, dims_W1, val_W1);
     tensor_t *W2 = tensor_create(pool, tensor_dtype_t::FLOAT32_T, 2, dims_W2, val_W2);
     tensor_t *b1 = tensor_create(pool, tensor_dtype_t::FLOAT32_T, 2, dims_b1, val_b1);
@@ -85,6 +85,24 @@ int main() {
             }
             tensor_sgd(seq, 0.01);
         }
+        tensor_graph_forward_evaluate(pool, pool_gpu, seq);
+        
+        float* inputs = (float*)tensor_get_data(X);
+        float* targets = (float*)tensor_get_data(Y);
+        float* predictions = (float*)tensor_get_data(Y_pred);
+
+        cout << "X1\tX2\t|\tTarget\t|\tPredicted\n";
+        cout << "---------------------------------------------------\n";
+        
+        for (int i = 0; i < 4; i++) {
+            float x1 = inputs[i * 2 + 0];
+            float x2 = inputs[i * 2 + 1];
+            float y_true = targets[i];
+            float y_pred = predictions[i];
+            
+            cout << x1 << "\t" << x2 << "\t|\t" << y_true << "\t|\t" << y_pred << "\n";
+        }
+        cout << "=========================================== \n";
     } else {
         cout << "WARNING: DAG Verification failed. Aborting expedition.\n";
     }
