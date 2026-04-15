@@ -259,12 +259,12 @@ tensor_t *tensor_mean(tensor_pool_t *pool, tensor_t *a);
 // return how correct we were b/w 0-1
 tensor_t *tensor_mse_loss(tensor_pool_t *pool, tensor_t *predictions, tensor_t *target);
 
-// Fills an existing tensor with normally distributed random numbers.
+// // Fills an existing tensor with normally distributed random numbers.
 bool tensor_fill_random_normal(tensor_t *t, float mean, float std_dev);
-
-// Fused operation combining Softmax and Cross-Entropy for stability
-tensor_t *tensor_cross_entropy_loss(tensor_pool_t *pool, const tensor_t *predictions,
-                                    const tensor_t *targets);
+//
+// // Fused operation combining Softmax and Cross-Entropy for stability
+// tensor_t *tensor_cross_entropy_loss(tensor_pool_t *pool, const tensor_t *predictions,
+//                                     const tensor_t *targets);
 
 // ***********************************************************************************
 // TODO: HAVE TO UPDATED FUNC SIG SPEC 
@@ -286,9 +286,7 @@ bool tensor_evaluate_GPU( tensor_pool_t *pool,tensor_t *t,  float *d_a, float *d
 bool tensor_backward(tensor_pool_t *pool, tensor_t *t);
 
 // The Optimizer
-void tensor_sgd_template(tensor_pool_t *static_weights_pool, double learning_rate);
-
-// API UNSTABLE
+void tensor_sgd(std::vector<execution_node_t *> &nodes, float learning_rate);
 /////////////////////////////////////////////////////////////
 // GRAPH OPERATIONS
 
@@ -354,14 +352,15 @@ void printExecutionNode(execution_node_t *et);
  * */
 bool tensor_graph_forward_evaluate(tensor_pool_t *pool_cpu, tensor_pool_t *pool_gpu, std::vector<execution_node_t *> &nodes);
 
-/*
- * Evaluate the whole graph backward operation.
- * @params            graph struct for ops sequence
- * @return            boolean status flag
- * */
-bool tensor_graph_backward_evaluate(tensor_graph_t *g);
-
 //////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
+// BACKWARD PASS FUNCTIONS
+
+void gradInitializer(std::vector<execution_node_t *> &nodes);
+
+bool tensor_graph_backward(std::vector<execution_node_t *> &nodes);
+
+void assignGradMemory(tensor_pool_t *pool_grad_cpu, tensor_pool_t *pool_grad_gpu, std::vector<execution_node_t *> &nodes);
 
 #ifdef __cplusplus
 }

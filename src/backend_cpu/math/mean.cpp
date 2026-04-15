@@ -22,5 +22,6 @@ bool tensor_op_mean(tensor_pool_t *pool, tensor_t *t) {
         sum += ((float *)t->a->data)[i];
     }
     ((float *)t->data)[0] = sum/(float)(t->a->nvalues);
+    ((float *)t->grad->data)[0] = 1.0f;
     return true;
 }

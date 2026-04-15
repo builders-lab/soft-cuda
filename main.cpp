@@ -1,84 +1,99 @@
 #include "soft-cuda/tensor/api.h"
-// #include "soft-cuda/tensor/debug_api.h"
+#include "soft-cuda/tensor/debug_api.h"
 #include <iostream>
 #include <vector>
+#include <cassert>
 
 using namespace std;
+
 int main() {
-    // Create pools
     // CPU ALLOCATION
     tensor_pool_t *pool = tensor_pool_create(1024 * 1024);
-    tensor_pool_t *pool_2 = tensor_pool_create(1024 * 1024);
+    tensor_pool_t *pool_meta = tensor_pool_create(1024 * 1024);
     tensor_pool_t *pool_grad_cpu = tensor_pool_create(1024 * 1024);
-    
+
+
     // GPU ALLOCATION
     tensor_pool_t *pool_gpu = tensor_pool_create(1024 * 1024, true);
     tensor_pool_t *pool_grad_gpu = tensor_pool_create(1024 * 1024, true);
+    
     assert(pool != NULL);
     assert(pool_gpu != NULL);
+    
+    cout << "=========================================== \n";
+    cout << "============= XOR IMPLEMENTATION  ============== \n";
+    
+    float val_X[8]{0,0,0,1,1,0,1,1};
+    float val_Y[4]{0,1,1,0};
+    float val_W1[4]{};
+    float val_W2[2]{};
+    float val_b1[2]{};
+    float val_b2[1]{};
+    uint32_t dims_X[]  = {4,2};
+    uint32_t dims_Y[]  = {4,1};
+    uint32_t dims_W1[] = {2, 2};
+    uint32_t dims_b1[] = {1, 2};
+    uint32_t dims_b2[] = {1, 1};
+    uint32_t dims_W2[] = {2, 1};
+    
+    tensor_t *X  = tensor_create(pool, tensor_dtype_t::FLOAT32_T, 2, dims_X,  val_X);
+    tensor_t *Y  = tensor_create(pool, tensor_dtype_t::FLOAT32_T, 2, dims_Y,  val_Y);
+    tensor_t *W1 = tensor_create(pool, tensor_dtype_t::FLOAT32_T, 2, dims_W1, val_W1);
+    tensor_t *W2 = tensor_create(pool, tensor_dtype_t::FLOAT32_T, 2, dims_W2, val_W2);
+    tensor_t *b1 = tensor_create(pool, tensor_dtype_t::FLOAT32_T, 2, dims_b1, val_b1);
+    tensor_t *b2 = tensor_create(pool, tensor_dtype_t::FLOAT32_T, 2, dims_b2, val_b2);
+
+    tensor_fill_random_normal(W1, 1, 0.01);
+    tensor_fill_random_normal(W2, 1.1, 0.01);
+    tensor_fill_random_normal(b1, 0.1, 0.01);
+    tensor_fill_random_normal(b2, 0.11, 0.01);
+    
+    cout << "=========================================== \n";
+    cout << "============== DEFINING OPS =============== \n";
+    
+    tensor_t *H_pred_bef = tensor_mul_naive(pool, X, W1);
+    tensor_t *H_pred = tensor_add(pool, H_pred_bef, b1);
+    tensor_t *H = tensor_relu(pool, H_pred);
+    tensor_t *Y_pred_bef = tensor_mul_naive(pool, H, W2);
+    tensor_t *Y_pred = tensor_add(pool, Y_pred_bef, b2);
+    tensor_t *L_sub = tensor_sub(pool, Y_pred, Y);
+    tensor_t *L_squ = tensor_square(pool, L_sub);
+    tensor_t *mse = tensor_mean(pool, L_squ);
+    cout << "=========================================== \n";
+    cout << "============== LAZY EVAL DONE =============== \n";
+    
 
     cout << "=========================================== \n";
-    cout << "=============TESTING DAG VERIFICATION============== \n";
-    
-    float val_a[900]{};
-    float val_b[900]{};
-    float val_c[900]{};
-    float val_d[900]{};
-    
-    // TACTICAL FIX: Make 'e' the exact same size to avoid a GPU segfault 
-    // before we implement a dedicated GPU broadcasting kernel!
-    float val_e[900]{};
-
-    uint32_t dims_a[] = {30, 30};
-    uint32_t dims_b[] = {30, 30};
-    uint32_t dims_c[] = {30, 30};
-    uint32_t dims_d[] = {30, 30};
-    uint32_t dims_e[] = {30, 30}; // Matched dimensions!
-
-    tensor_t *a = tensor_create(pool, tensor_dtype_t::FLOAT32_T, 2, dims_a, val_a, false);
-    tensor_t *b = tensor_create(pool, tensor_dtype_t::FLOAT32_T, 2, dims_b, val_b, false);
-    tensor_t *c = tensor_create(pool, tensor_dtype_t::FLOAT32_T, 2, dims_c, val_c, false);
-    tensor_t *d = tensor_create(pool, tensor_dtype_t::FLOAT32_T, 2, dims_d, val_d, false);
-    tensor_t *e = tensor_create(pool, tensor_dtype_t::FLOAT32_T, 2, dims_e, val_e, false);
-    tensor_fill_random_normal(a, 10.1, 5.7);
-    tensor_fill_random_normal(b, 10.1, 5.7);
-    tensor_fill_random_normal(c, 10.1, 5.7);
-    tensor_fill_random_normal(d, 10.1, 5.7);
-    tensor_fill_random_normal(e, 10.1, 5.7);
-    tensor_t *f = tensor_mul(pool, a, b);
-    tensor_t *g = tensor_mul(pool, b, c);
-    tensor_t *h = tensor_mul(pool, e, f);
-    tensor_t *i = tensor_mul(pool, h, a);
-    tensor_t *j = tensor_mul(pool, i, g);
-
-    cout << "=========================================== \n";
-    cout << "==============LAZY EVAL DONE=============== \n";
-    
+    cout << "============== PREPARING THE KITCHEN =============== \n";
     std::vector<execution_node_t*> seq;
-    bool oki = verifyIfDAG(pool_2, j, seq);
-    
-    // Ensure assignDevice is returning device_type::GPU under the hood!
+    bool oki = verifyIfDAG(pool_meta, mse, seq);
     assignBackendGraph(pool_gpu, seq);
-
-    assignGradMemory(pool_grad_cpu,pool_grad_gpu, seq);
-    tensor_graph_forward_evaluate(pool, pool_gpu, seq);
+    assignGradMemory(pool_grad_cpu, pool_grad_gpu, seq);
+    
     
     if (oki) {
-        cout << "=========================================== \n";
-        cout << "========= VRAM TRACE ============= \n";
-        
-            execution_node_t *node = seq.back();
-            
-                // Pull it back to the CPU
-                execution_node_to_host(node);
-                printExecutionNode(node);
-                cout << "\n";
+    cout << "=========================================== \n";
+    cout << "============== STARTING TRAINING =============== \n";
+        for (int i = 0; i < 10000; i++) {
+            tensor_graph_forward_evaluate(pool, pool_gpu, seq);
+            gradInitializer(seq);
+            tensor_graph_backward(seq);
+            if (i % 1000 == 0) {
+                std::cout << i << "EPOCH";
+                execution_node_t *mse = seq.back();
+                printExecutionNode(mse);
+            }
+            tensor_sgd(seq, 0.01);
+        }
+    } else {
+        cout << "WARNING: DAG Verification failed. Aborting expedition.\n";
     }
-
+     
     tensor_pool_destroy(pool);
-    tensor_pool_destroy(pool_2);
+    tensor_pool_destroy(pool_meta);
     tensor_pool_destroy(pool_grad_cpu);
     tensor_pool_destroy(pool_grad_gpu);
     tensor_pool_destroy(pool_gpu);
+    
     return 0;
 }

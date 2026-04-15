@@ -14,6 +14,7 @@
 #include "backend_cpu/include/scalar.h"
 #include "backend_cpu/include/transpose.h"
 #include "backend_cpu/include/relu.h"
+#include "backend_cpu/include/backprop/backprop_b.h"
 #include "./core/include/graph/DAGbuild.h"
 #include "./core/include/graph/assignBackend.h"
 #include "./core/include/JSON/json_utils.h"

@@ -23,6 +23,7 @@ void assignBackend(execution_node_t *e, json &data) {
  */
 device_type assignDevice([[maybe_unused]] uint8_t ndims, [[maybe_unused]] uint32_t *dims,
                          [[maybe_unused]] tensor_op_t op, uint32_t nvalues, json &data) {
+    return device_type::CPU;
     if(op == tensor_op_t::NONE) {
         return device_type::CPU;
     }
