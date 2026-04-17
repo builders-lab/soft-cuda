@@ -16,6 +16,22 @@ void assignBackend(execution_node_t *e, json &data) {
         e->device_ptr = NULL; // pre-allocation happens in Pass 2
     }
 }
+void assignBackendCpu(execution_node_t *e) {
+    e->backend_fn = tensor_evaluate;
+    e->device_ptr = NULL;
+}
+
+void assignBackendGpu(execution_node_t *e) {
+    if (e->t->op == tensor_op_t::NONE) {
+        e->backend_fn = tensor_evaluate;
+        e->device_ptr = NULL;
+        return;
+
+    }
+    e->backend_fn = tensor_evaluate_GPU;
+    e->device_ptr = NULL;
+    return;
+}
 
 // TODO: Implement CONFIG.soft parser and assignment on the basis of that
 /* NOTE: Remember that when op is  tensor_op_t::NONE you assign it to CPU,
@@ -23,7 +39,6 @@ void assignBackend(execution_node_t *e, json &data) {
  */
 device_type assignDevice([[maybe_unused]] uint8_t ndims, [[maybe_unused]] uint32_t *dims,
                          [[maybe_unused]] tensor_op_t op, uint32_t nvalues, json &data) {
-    return device_type::CPU;
     if(op == tensor_op_t::NONE) {
         return device_type::CPU;
     }
@@ -77,13 +92,24 @@ void assignPlaceOnDeviceMemory(tensor_pool_t *pool, int32_t a_idx, std::vector<e
 
 }
 
-void assignBackendGraph(tensor_pool_t *pool,std::vector<execution_node_t *> &nodes) {
+void assignBackendGraph(tensor_pool_t *pool,std::vector<execution_node_t *> &nodes, backend_mode backend) {
     setUpParentReference(nodes);
-    json data = readJsonToMap("/home/wslarch/Documents/Coding/DEV/soft/soft-cuda/src/init/config/CONFIG.soft");
-    for (auto node : nodes) {
-        assignBackend(node, data);
+    if (backend == backend_mode::CPU) {
+        for (auto node : nodes) {
+            assignBackendCpu(node);
+        }
+    } else if (backend == backend_mode::GPU) {
+        for (auto node : nodes) {
+            assignBackendGpu(node);
+        }
+    } else if (backend == backend_mode::HYBRID) {
+        json data = readJsonToMap("/home/wslarch/Documents/Coding/DEV/soft/soft-cuda/src/init/config/CONFIG.soft");
+        for (auto node : nodes) {
+            assignBackend(node, data);
+        }
+    } else {
+        throw std::invalid_argument("This backend is not supported");
     }
-
     for (auto node : nodes) {
         if (node->backend_fn == tensor_evaluate_GPU) {
             // TODO: Implement contagious logic
@@ -235,4 +261,24 @@ void assignGradMemory(tensor_pool_t *pool_grad_cpu, tensor_pool_t *pool_grad_gpu
             node->device_ptr_grad = tensor_pool_alloc(pool_grad_gpu, size, &id);
         }
     }
+}
+
+// Since autograd is not ready I am making two function one for device to host copy and one which iterate over graph and transfer them back to cpu
+
+void fromDeviceToHost(execution_node_t *node) {
+    cudaMemcpy(node->t->data, node->device_ptr, node->t->nvalues * sizeof(float), cudaMemcpyDeviceToHost);
+    return;
+}
+
+void autogradGpuMemTranfer(std::vector<execution_node_t *> &nodes) {
+    for(auto node : nodes) {
+        if (node->backend_fn == tensor_evaluate_GPU) {
+            // cause we do implict fallback to cpu in case we don't have that op on gpu
+            if (node->t->data == NULL) {
+                fromDeviceToHost(node);
+            }
+            // Not doing backend_fn mutation cause then we will have to run assignBackend again and again
+            node->device_ptr_grad = NULL;
+        }
+    } 
 }

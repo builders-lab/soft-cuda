@@ -30,7 +30,12 @@ enum class device_type {
     GPU,
     CPU,
 };
-
+// Added this for assignBackend function so that we can adjust according to user requirements
+enum class backend_mode {
+    GPU,
+    CPU,
+    HYBRID,
+};
 // DONE
 //  Opaque tensor
 typedef struct tensor_instance tensor_t;
@@ -330,7 +335,7 @@ bool verifyIfDAG(tensor_pool_t *pool, tensor_t *t, std::vector<execution_node_t 
  * @return void       Doesn't return anything.
  * */
 // DONE
-void assignBackendGraph(tensor_pool_t *pool,std::vector<execution_node_t *> &nodes);
+void assignBackendGraph(tensor_pool_t *pool,std::vector<execution_node_t *> &nodes, backend_mode value = backend_mode::CPU);
 
 void assignGradMemory(tensor_pool_t *pool_grad_cpu, tensor_pool_t *pool_grad_gpu, std::vector<execution_node_t *> &nodes);
 /* @params  Take execution_node_t which you wanna know
@@ -361,6 +366,8 @@ void gradInitializer(std::vector<execution_node_t *> &nodes);
 bool tensor_graph_backward(std::vector<execution_node_t *> &nodes);
 
 void assignGradMemory(tensor_pool_t *pool_grad_cpu, tensor_pool_t *pool_grad_gpu, std::vector<execution_node_t *> &nodes);
+
+void autogradGpuMemTranfer(std::vector<execution_node_t *> &nodes);
 
 #ifdef __cplusplus
 }

@@ -215,7 +215,9 @@ bool tensor_evaluate_GPU([[maybe_unused]] tensor_pool_t *pool, [[maybe_unused]]t
         success = tensor_mul_op_cuda(t, d_a, d_b, d_res);
         break;
     default:
-        assert(false);
+        // We are having a stopgap where if we have not written that op on GPU then CPU will handle it
+        std::cout << "OP NOT AVAILABLE FOR GPU SWITCHING TO CPU";
+        success = tensor_evaluate(pool, t, d_a, d_b, d_res);
     }
     if (success) {
         debug("tensor_evaluate_GPU: success\n");
