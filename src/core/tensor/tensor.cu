@@ -216,9 +216,18 @@ bool tensor_evaluate_GPU([[maybe_unused]] tensor_pool_t *pool, [[maybe_unused]]t
         break;
     default:
         // We are having a stopgap where if we have not written that op on GPU then CPU will handle it
-        std::cout << "OP NOT AVAILABLE FOR GPU SWITCHING TO CPU";
+        std::cout << "OP NOT AVAILABLE FOR GPU SWITCHING TO CPU\n";
+        if (t->a != nullptr && d_a != nullptr) {
+            cudaMemcpy(t->a->data, d_a, t->a->nvalues * sizeof(float), cudaMemcpyDeviceToHost);
+        }
+        if (t->b != nullptr && d_b != nullptr) {
+            cudaMemcpy(t->b->data, d_b, t->b->nvalues * sizeof(float), cudaMemcpyDeviceToHost);
+        }
         success = tensor_evaluate(pool, t, d_a, d_b, d_res);
-    }
+        if (success && d_res != nullptr) {
+            cudaMemcpy(d_res, t->data, t->nvalues * sizeof(float), cudaMemcpyHostToDevice);
+        }
+}
     if (success) {
         debug("tensor_evaluate_GPU: success\n");
     } else {

@@ -71,51 +71,51 @@ int main() {
     assignBackendGraph(pool_gpu, seq, backend_mode::HYBRID);
     std::cout << "TESTING OUT ";
     assignGradMemory(pool_grad_cpu, pool_grad_gpu, seq);
-    tensor_graph_forward_evaluate(pool, pool_gpu, seq);
+    // tensor_graph_forward_evaluate(pool, pool_gpu, seq);
 
-    // if (oki) {
-    //     cout << "=========================================== \n";
-    //     cout << "============= STARTING TRAINING =========== \n";
-    //
-    //     for (int i = 0; i <= 10000; i++) {
-    //         tensor_graph_forward_evaluate(pool, pool_gpu, seq);
-    //         autogradGpuMemTranfer(seq);
-    //         gradInitializer(seq);
-    //         tensor_graph_backward(seq);
-    //
-    //         if (i % 1000 == 0) {
-    //             std::cout << "EPOCH " << i << "\n";
-    //             execution_node_t *mse_node = seq.back();
-    //             printExecutionNode(mse_node);
-    //         }
-    //
-    //         tensor_sgd(seq, 0.05); 
-    //     }
-    //
-    //     tensor_graph_forward_evaluate(pool, pool_gpu, seq);
-    //
-    //     float* inputs      = (float*)tensor_get_data(X);
-    //     float* targets     = (float*)tensor_get_data(Y);
-    //     float* predictions = (float*)tensor_get_data(Y_pred);
-    //
-    //     cout << "=========================================== \n";
-    //     cout << "============= XOR(4 NEURONS RESULT) ============= \n";
-    //     cout << "X1\tX2\t|\tTarget\t|\tPredicted\n";
-    //     cout << "---------------------------------------------------\n";
-    //
-    //     for (int i = 0; i < 4; i++) {
-    //         float x1     = inputs[i * 2 + 0];
-    //         float x2     = inputs[i * 2 + 1];
-    //         float y_true = targets[i];
-    //         float y_pred = predictions[i];
-    //
-    //         cout << x1 << "\t" << x2 << "\t|\t" << y_true << "\t|\t" << y_pred << "\n";
-    //     }
-    //     cout << "=========================================== \n";
-    //
-    // } else {
-    //     cout << "WARNING: DAG Verification failed. Aborting expedition.\n";
-    // }
+    if (oki) {
+        cout << "=========================================== \n";
+        cout << "============= STARTING TRAINING =========== \n";
+
+        for (int i = 0; i <= 10000; i++) {
+            tensor_graph_forward_evaluate(pool, pool_gpu, seq);
+            autogradGpuMemTranfer(seq);
+            gradInitializer(seq);
+            tensor_graph_backward(seq);
+
+            if (i % 1000 == 0) {
+                std::cout << "EPOCH " << i << "\n";
+                execution_node_t *mse_node = seq.back();
+                printExecutionNode(mse_node);
+            }
+
+            tensor_sgd(seq, 0.05); 
+        }
+
+        tensor_graph_forward_evaluate(pool, pool_gpu, seq);
+
+        float* inputs      = (float*)tensor_get_data(X);
+        float* targets     = (float*)tensor_get_data(Y);
+        float* predictions = (float*)tensor_get_data(Y_pred);
+
+        cout << "=========================================== \n";
+        cout << "============= XOR(4 NEURONS RESULT) ============= \n";
+        cout << "X1\tX2\t|\tTarget\t|\tPredicted\n";
+        cout << "---------------------------------------------------\n";
+
+        for (int i = 0; i < 4; i++) {
+            float x1     = inputs[i * 2 + 0];
+            float x2     = inputs[i * 2 + 1];
+            float y_true = targets[i];
+            float y_pred = predictions[i];
+
+            cout << x1 << "\t" << x2 << "\t|\t" << y_true << "\t|\t" << y_pred << "\n";
+        }
+        cout << "=========================================== \n";
+
+    } else {
+        cout << "WARNING: DAG Verification failed. Aborting expedition.\n";
+    }
 
     tensor_pool_destroy(pool);
     tensor_pool_destroy(pool_meta);

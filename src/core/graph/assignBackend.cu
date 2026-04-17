@@ -156,6 +156,7 @@ void assignBackendGraph(tensor_pool_t *pool,std::vector<execution_node_t *> &nod
 
 bool tensor_graph_forward_evaluate(tensor_pool_t *pool_cpu, tensor_pool_t *pool_gpu, std::vector<execution_node_t *> &nodes) {
     for(auto node : nodes) {
+changedToGPU:
         if(node->backend_fn == tensor_evaluate_GPU){
             // TODO: Write the memory copy for parents when child have this as well as evaluating it
             // NOTE: We have to check maybe parents are already on GPU
@@ -198,6 +199,25 @@ bool tensor_graph_forward_evaluate(tensor_pool_t *pool_cpu, tensor_pool_t *pool_
             node->t->device = device_type::GPU;
             // device_type device;
         } else if (node->backend_fn == tensor_evaluate) {
+            // I had forgotten to take into account that if parents are on GPU but child is assigned as CPU operation(which is unlikely but could be possible)
+            // We will handle it by changing the backend_fn to GPU so things work out
+            
+            int32_t a_idx = getTheExecutionNodeIndex(node, 0);
+            if(a_idx != -1){
+                auto parent_a = nodes[(size_t)a_idx];
+                if (parent_a->t->device == device_type::GPU) {
+                    node->backend_fn = tensor_evaluate_GPU;
+                    goto changedToGPU;
+                }
+            }
+            int32_t b_idx = getTheExecutionNodeIndex(node, 1);
+            if(b_idx != -1){
+                auto parent_b = nodes[(size_t)b_idx];
+                if (parent_b->t->device == device_type::CPU) {
+                    node->backend_fn = tensor_evaluate_GPU;
+                    goto changedToGPU;
+                }
+            }
             float *dummy = nullptr;
             (*(node->backend_fn))(pool_cpu, node->t, dummy, dummy, dummy);
         }
