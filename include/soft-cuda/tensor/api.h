@@ -30,7 +30,12 @@ enum class device_type {
     GPU,
     CPU,
 };
-
+// Added this for assignBackend function so that we can adjust according to user requirements
+enum class backend_mode {
+    GPU,
+    CPU,
+    HYBRID,
+};
 // DONE
 //  Opaque tensor
 typedef struct tensor_instance tensor_t;
@@ -84,7 +89,7 @@ uint32_t tensor_id(tensor_t *t);
  */
 // DONE
 tensor_t *tensor_create(tensor_pool_t *pool, tensor_dtype_t dtype, uint32_t num_dims,
-                        uint32_t *dims, void *elems);
+                        uint32_t *dims, void *elems, bool grad_status = true);
 
 /*
  * Establish a new memory arena
@@ -186,6 +191,7 @@ void tensor_print_data(tensor_t *t);
 // DONE
 tensor_t *tensor_mul(tensor_pool_t *pool, tensor_t *x, tensor_t *y);
 
+tensor_t *tensor_square(tensor_pool_t *pool, tensor_t *x);
 /* The naive version of matrix multiplication
  * @param pool       Pointer to the tensor pool
  * @param x            Pointer to the tensor which will be mulptiplied
@@ -221,6 +227,16 @@ tensor_t *tensor_add(tensor_pool_t *pool, tensor_t *x, tensor_t *y);
 // DONE
 tensor_t *tensor_add_bias(tensor_pool_t *pool, const tensor_t *xw, const tensor_t *bias);
 
+/*
+ * Do matrix subtraction
+ * @param out          Pointer to the tensor where result will be stored
+ * @param x            Pointer to the tensor which will be subtracted from 
+ * @param y            Pointer to the tensor which will be subtracted
+ *
+ * @return             Returns a tensor object with operation set.
+ * */
+// DONE
+tensor_t *tensor_sub(tensor_pool_t *pool, tensor_t *a, tensor_t *b);
 /////////////////////////////////////////////////////////////
 /// DEPRECEATED tensor_mul operation handles it automatically
 // /*
@@ -242,23 +258,25 @@ tensor_t *tensor_add_bias(tensor_pool_t *pool, const tensor_t *xw, const tensor_
 // DONE
 tensor_t *tensor_relu(tensor_pool_t *pool, tensor_t *a);
 
+// DONE
+tensor_t *tensor_mean(tensor_pool_t *pool, tensor_t *a);
 // Compares result
 // return how correct we were b/w 0-1
 tensor_t *tensor_mse_loss(tensor_pool_t *pool, tensor_t *predictions, tensor_t *target);
 
-// Fills an existing tensor with normally distributed random numbers.
+// // Fills an existing tensor with normally distributed random numbers.
 bool tensor_fill_random_normal(tensor_t *t, float mean, float std_dev);
-
-// Fused operation combining Softmax and Cross-Entropy for stability
-tensor_t *tensor_cross_entropy_loss(tensor_pool_t *pool, const tensor_t *predictions,
-                                    const tensor_t *targets);
+//
+// // Fused operation combining Softmax and Cross-Entropy for stability
+// tensor_t *tensor_cross_entropy_loss(tensor_pool_t *pool, const tensor_t *predictions,
+//                                     const tensor_t *targets);
 
 // ***********************************************************************************
 // TODO: HAVE TO UPDATED FUNC SIG SPEC 
 // Evalutes the operation(Forward) with depth=1
 // @return             boolean flag for status
 // DONE
-bool tensor_evaluate( tensor_pool_t *pool,tensor_t *t,  float *d_a, float *d_b, float *d_res);
+bool tensor_evaluate( tensor_pool_t *pool,tensor_t *t,  float *d_a = nullptr, float *d_b = nullptr, float *d_res= nullptr);
 // DONE
 bool tensor_evaluate_GPU( tensor_pool_t *pool,tensor_t *t,  float *d_a, float *d_b, float *d_res);
 
@@ -273,9 +291,7 @@ bool tensor_evaluate_GPU( tensor_pool_t *pool,tensor_t *t,  float *d_a, float *d
 bool tensor_backward(tensor_pool_t *pool, tensor_t *t);
 
 // The Optimizer
-void tensor_sgd_template(tensor_pool_t *static_weights_pool, double learning_rate);
-
-// API UNSTABLE
+void tensor_sgd(std::vector<execution_node_t *> &nodes, float learning_rate);
 /////////////////////////////////////////////////////////////
 // GRAPH OPERATIONS
 
@@ -319,8 +335,9 @@ bool verifyIfDAG(tensor_pool_t *pool, tensor_t *t, std::vector<execution_node_t 
  * @return void       Doesn't return anything.
  * */
 // DONE
-void assignBackendGraph(tensor_pool_t *pool,std::vector<execution_node_t *> &nodes);
+void assignBackendGraph(tensor_pool_t *pool,std::vector<execution_node_t *> &nodes, backend_mode value = backend_mode::CPU);
 
+void assignGradMemory(tensor_pool_t *pool_grad_cpu, tensor_pool_t *pool_grad_gpu, std::vector<execution_node_t *> &nodes);
 /* @params  Take execution_node_t which you wanna know
  * @returns the postion of the execution_node_t after verifyIfDAG
  * */
@@ -340,14 +357,17 @@ void printExecutionNode(execution_node_t *et);
  * */
 bool tensor_graph_forward_evaluate(tensor_pool_t *pool_cpu, tensor_pool_t *pool_gpu, std::vector<execution_node_t *> &nodes);
 
-/*
- * Evaluate the whole graph backward operation.
- * @params            graph struct for ops sequence
- * @return            boolean status flag
- * */
-bool tensor_graph_backward_evaluate(tensor_graph_t *g);
-
 //////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
+// BACKWARD PASS FUNCTIONS
+
+void gradInitializer(std::vector<execution_node_t *> &nodes);
+
+bool tensor_graph_backward(std::vector<execution_node_t *> &nodes);
+
+void assignGradMemory(tensor_pool_t *pool_grad_cpu, tensor_pool_t *pool_grad_gpu, std::vector<execution_node_t *> &nodes);
+
+void autogradGpuMemTranfer(std::vector<execution_node_t *> &nodes);
 
 #ifdef __cplusplus
 }

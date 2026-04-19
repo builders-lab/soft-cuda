@@ -33,7 +33,7 @@ size_t tensor_dtype_sizeof(tensor_dtype_t dtype) {
 }
 
 tensor_t *tensor_dtype_create(tensor_pool_t *pool, tensor_dtype_t dtype, uint32_t ndims,
-                              uint32_t *dims, void *elems) {
+                              uint32_t *dims, void *elems, bool grad_status) {
     assert(pool != NULL);
     assert(tensor_dtype_sizeof(dtype) > 0);
 
@@ -99,7 +99,7 @@ tensor_t *tensor_dtype_create(tensor_pool_t *pool, tensor_dtype_t dtype, uint32_
     t->b = NULL;
     t->stateTracker = 0;
     t->device = device_type::CPU;
-    t->grad_compute = false;
+    t->grad_compute = grad_status;
     t->is_transposed = false;
     // Return success
     return t;
@@ -107,8 +107,8 @@ tensor_t *tensor_dtype_create(tensor_pool_t *pool, tensor_dtype_t dtype, uint32_
 
 // Create float32 tensor
 tensor_t *tensor_create(tensor_pool_t *pool, tensor_dtype_t dtype, uint32_t num_dims,
-                        uint32_t *dims, void *elems) {
-    return tensor_dtype_create(pool, dtype, num_dims, dims, elems);
+                        uint32_t *dims, void *elems, bool grad_status) {
+    return tensor_dtype_create(pool, dtype, num_dims, dims, elems, grad_status);
 }
 
 bool tensor_evaluate(tensor_pool_t *pool, tensor_t *t,  [[maybe_unused]]float *d_a, [[maybe_unused]]float *d_b, [[maybe_unused]]float *d_res) {
@@ -161,6 +161,20 @@ bool tensor_evaluate(tensor_pool_t *pool, tensor_t *t,  [[maybe_unused]]float *d
         assert(t->a != NULL);
         success = tensor_op_relu(pool, t);
         break;
+    case tensor_op_t::SUB:
+        assert(t->a != NULL);
+        assert(t->b != NULL);
+        assert(t->a->dtype == t->b->dtype);
+        success = tensor_op_sub(pool, t);
+        break;
+    case tensor_op_t::MEAN:
+        assert(t->a != NULL);
+        success = tensor_op_mean(pool, t);
+        break;
+    case tensor_op_t::SQUARE:
+        assert(t->a != NULL);
+        success = tensor_op_square(pool, t);
+        break;
     default:
         assert(false);
     }
@@ -201,8 +215,19 @@ bool tensor_evaluate_GPU([[maybe_unused]] tensor_pool_t *pool, [[maybe_unused]]t
         success = tensor_mul_op_cuda(t, d_a, d_b, d_res);
         break;
     default:
-        assert(false);
-    }
+        // We are having a stopgap where if we have not written that op on GPU then CPU will handle it
+        std::cout << "OP NOT AVAILABLE FOR GPU SWITCHING TO CPU\n";
+        if (t->a != nullptr && d_a != nullptr) {
+            cudaMemcpy(t->a->data, d_a, t->a->nvalues * sizeof(float), cudaMemcpyDeviceToHost);
+        }
+        if (t->b != nullptr && d_b != nullptr) {
+            cudaMemcpy(t->b->data, d_b, t->b->nvalues * sizeof(float), cudaMemcpyDeviceToHost);
+        }
+        success = tensor_evaluate(pool, t, d_a, d_b, d_res);
+        if (success && d_res != nullptr) {
+            cudaMemcpy(d_res, t->data, t->nvalues * sizeof(float), cudaMemcpyHostToDevice);
+        }
+}
     if (success) {
         debug("tensor_evaluate_GPU: success\n");
     } else {
@@ -221,6 +246,10 @@ uint8_t tensor_get_ndims(tensor_t *t) { return t->ndims; }
 uint32_t *tensor_get_dims(tensor_t *t) { return t->dims; }
 
 void tensor_print_data(tensor_t *t) {
+    if (t->ndims == 0) {
+        std::cout << ((float *)t->data)[0] << "\n";
+        return;
+    }
     for (uint32_t i = 0; i < t->dims[0]; i++) {
         for (uint32_t j = 0; j < t->dims[1]; j++) {
             uint32_t index = i * t->dims[1] + j;

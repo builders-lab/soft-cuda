@@ -33,11 +33,10 @@
       }
     ],
     "add": [
-      {
-        "backend": "cuda"
-      }
+      { "min": 0, "max": 127, "backend": "cpu" },
+      { "min": 128, "max": 4096, "backend": "cuda" }
     ]
-  },
+    },
   "pool": {
     "device": "cuda",
     "block_size": 2097152

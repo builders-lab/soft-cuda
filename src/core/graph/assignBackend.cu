@@ -1,5 +1,5 @@
 #include "internal_header.h"
-#include "vector"
+// #include "vector"
 #include <iostream>
 #include <cuda_runtime.h>
 
@@ -15,6 +15,22 @@ void assignBackend(execution_node_t *e, json &data) {
         e->backend_fn = tensor_evaluate_GPU;
         e->device_ptr = NULL; // pre-allocation happens in Pass 2
     }
+}
+void assignBackendCpu(execution_node_t *e) {
+    e->backend_fn = tensor_evaluate;
+    e->device_ptr = NULL;
+}
+
+void assignBackendGpu(execution_node_t *e) {
+    if (e->t->op == tensor_op_t::NONE) {
+        e->backend_fn = tensor_evaluate;
+        e->device_ptr = NULL;
+        return;
+
+    }
+    e->backend_fn = tensor_evaluate_GPU;
+    e->device_ptr = NULL;
+    return;
 }
 
 // TODO: Implement CONFIG.soft parser and assignment on the basis of that
@@ -43,7 +59,7 @@ device_type assignDevice([[maybe_unused]] uint8_t ndims, [[maybe_unused]] uint32
         if (op == tensor_op_t::ADD) {
             auto params = data["ops"]["add"];
             for(auto param: params) {
-                if(!param.contains("min") || param["min"] <= nvalues && param["max"] > nvalues) {
+                if(!param.contains("min") || (param["min"] <= nvalues && param["max"] > nvalues)) {
                     if(param["backend"] == "cpu") {
                         return device_type::CPU;
                     } else {
@@ -55,7 +71,7 @@ device_type assignDevice([[maybe_unused]] uint8_t ndims, [[maybe_unused]] uint32
     } catch (const std::exception& e) {
        debug("Error: %s\n", e.what());
     }
-    return device_type::GPU;
+    return device_type::CPU;
 }
 
 int32_t getTheExecutionNodeIndex(execution_node_t *node, uint32_t idx) {
@@ -76,14 +92,26 @@ void assignPlaceOnDeviceMemory(tensor_pool_t *pool, int32_t a_idx, std::vector<e
 
 }
 
-void assignBackendGraph(tensor_pool_t *pool,std::vector<execution_node_t *> &nodes) {
+void assignBackendGraph(tensor_pool_t *pool,std::vector<execution_node_t *> &nodes, backend_mode backend) {
     setUpParentReference(nodes);
-    json data = readJsonToMap("/home/wslarch/Documents/Coding/DEV/soft/soft-cuda/src/init/config/CONFIG.soft");
-    for (auto node : nodes) {
-        assignBackend(node, data);
+    if (backend == backend_mode::CPU) {
+        for (auto node : nodes) {
+            assignBackendCpu(node);
+        }
+    } else if (backend == backend_mode::GPU) {
+        for (auto node : nodes) {
+            assignBackendGpu(node);
+        }
+    } else if (backend == backend_mode::HYBRID) {
+        json data = readJsonToMap("/home/wslarch/Documents/Coding/DEV/soft/soft-cuda/src/init/config/CONFIG.soft");
+        for (auto node : nodes) {
+            assignBackend(node, data);
+        }
+    } else {
+        throw std::invalid_argument("This backend is not supported");
     }
-
     for (auto node : nodes) {
+changedToGPU:
         if (node->backend_fn == tensor_evaluate_GPU) {
             // TODO: Implement contagious logic
             // TODO: How to get access to the execution_node place in graph when we just know the
@@ -105,6 +133,25 @@ void assignBackendGraph(tensor_pool_t *pool,std::vector<execution_node_t *> &nod
                 assert(b_idx != -1);
                 nodes[((size_t)b_idx)]->to_device_needed = true;
                 assignPlaceOnDeviceMemory(pool, b_idx, nodes);
+            }
+        } else {
+            // I had forgotten to take into account that if parents are on GPU but child is assigned as CPU operation(which is unlikely but could be possible)
+            // We will handle it by changing the backend_fn to GPU so things work out
+            int32_t a_idx = getTheExecutionNodeIndex(node, 0);
+            if(a_idx != -1){
+                auto parent_a = nodes[(size_t)a_idx];
+                if (parent_a->t->device == device_type::GPU) {
+                    node->backend_fn = tensor_evaluate_GPU;
+                    goto changedToGPU;
+                }
+            }
+            int32_t b_idx = getTheExecutionNodeIndex(node, 1);
+            if(b_idx != -1){
+                auto parent_b = nodes[(size_t)b_idx];
+                if (parent_b->t->device == device_type::GPU) {
+                    node->backend_fn = tensor_evaluate_GPU;
+                    goto changedToGPU;
+                }
             }
         }
     }
@@ -171,6 +218,7 @@ bool tensor_graph_forward_evaluate(tensor_pool_t *pool_cpu, tensor_pool_t *pool_
             node->t->device = device_type::GPU;
             // device_type device;
         } else if (node->backend_fn == tensor_evaluate) {
+            
             float *dummy = nullptr;
             (*(node->backend_fn))(pool_cpu, node->t, dummy, dummy, dummy);
         }
@@ -185,6 +233,7 @@ void printExecutionNode(execution_node_t *et) {
     tensor_print_data(et->t);
     std::cout << et->to_device_needed << "\n";
     std::cout << et->device_ptr << "\n";
+    std::cout << et->device_ptr_grad << "\n";
     std::cout << (et->backend_fn != NULL) << "\n";
 }
 
@@ -207,4 +256,50 @@ bool execution_node_to_host(execution_node_t *node) {
         }
     }
     return true;
+}
+
+// What we can do is keep it default and then have user declare leaf to NULL. As otherwise it would
+// be difficult to implement the propogation logic
+// NOTE: Since we are making the memory here and device_ptr_grad is here to what we will do is take
+// the whole execution node and then pass it to the eagar OPS and then we will see if it does have
+// `device_ptr_grad` if so then it's fine right other wise we will directly write to
+// node->t->grad->data right. Then after all the ops we will make a new function which will scan the
+// whole graph and then if it sees the device_ptr_grad is not null it will initiate data transfer.
+void assignGradMemory(tensor_pool_t *pool_grad_cpu, tensor_pool_t *pool_grad_gpu, std::vector<execution_node_t *> &nodes) {
+    for(auto &node : nodes) {
+        // We are not assigning grad instance during tensor create.
+        // Maybe we can do that but I feel it might cause recursion problem even if with assigning base case of leaf nodes
+        // there is the problem that during creation time it could cause function call overhead and whatnot.
+        // So we are going to make a tensor instance here and assign it here i guess. 
+        
+        if(node->t->grad_compute == false) continue;
+
+        node->t->grad =  tensor_dtype_create(pool_grad_cpu, node->t->dtype, node->t->ndims, node->t->dims, NULL);
+
+        if(node->backend_fn == tensor_evaluate_GPU) {
+            size_t size = node->t->nvalues * sizeof(float) ;
+            uint32_t id;
+            node->device_ptr_grad = tensor_pool_alloc(pool_grad_gpu, size, &id);
+        }
+    }
+}
+
+// Since autograd is not ready I am making two function one for device to host copy and one which iterate over graph and transfer them back to cpu
+
+void fromDeviceToHost(execution_node_t *node) {
+    cudaMemcpy(node->t->data, node->device_ptr, node->t->nvalues * sizeof(float), cudaMemcpyDeviceToHost);
+    return;
+}
+
+void autogradGpuMemTranfer(std::vector<execution_node_t *> &nodes) {
+    for(auto node : nodes) {
+        if (node->backend_fn == tensor_evaluate_GPU) {
+            // cause we do implict fallback to cpu in case we don't have that op on gpu
+            if (node->t->data == NULL) {
+                fromDeviceToHost(node);
+            }
+            // Not doing backend_fn mutation cause then we will have to run assignBackend again and again
+            node->device_ptr_grad = NULL;
+        }
+    } 
 }

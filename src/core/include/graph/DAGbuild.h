@@ -14,6 +14,9 @@ struct execution_node {
     // Pointer to device VRAM alloc, NULL if not needed
     void *device_ptr;
 
+    // Pointer to device VRAM alloc, will be the gradient pointer storing the result of backward pass for data i.e on GPU
+    void *device_ptr_grad;
+    
     // Boolean flag storing weather it will need to be transfered based upon reading the childs OPS
     bool to_device_needed;
 

@@ -30,21 +30,24 @@ tensor_t *tensor_add(tensor_pool_t *pool, tensor_t *x, tensor_t *y) {
     assert(x != NULL);
     assert(y != NULL);
 
-    if (x->dims[0] == 1 || x->dims[1] == 1) {
-        return tensor_broadcast_add(pool, y, x);
-    }
-    if (y->dims[0] == 1 || y->dims[1] == 1) {
-        return tensor_broadcast_add(pool, x, y);
+    if (x->nvalues == y->nvalues) {
+        tensor_t *t = tensor_dtype_create(pool, x->dtype, x->ndims, x->dims, NULL);
+        if (t == NULL) return NULL;
+        t->op = tensor_op_t::ADD;
+        t->a = x;
+        t->b = y;
+        return t;
     }
 
-    tensor_t *t = tensor_dtype_create(pool, x->dtype, x->ndims, x->dims, NULL);
-    if (t == NULL) {
-        return NULL;
+    if (y->nvalues < x->nvalues && (y->dims[0] == 1 || y->dims[1] == 1)) {
+        return tensor_broadcast_add(pool, x, y);
     }
-    t->op = tensor_op_t::ADD;
-    t->a = x;
-    t->b = y;
-    return t;
+    
+    if (x->nvalues < y->nvalues && (x->dims[0] == 1 || x->dims[1] == 1)) {
+        return tensor_broadcast_add(pool, y, x);
+    }
+
+    return NULL; // Unsupported broadcast shape
 }
 
 bool tensor_op_add(tensor_pool_t *pool, tensor_t *t) {
@@ -76,3 +79,4 @@ float get_sum_for_col_op(tensor_t *b, uint32_t i, tensor_t *t) {
         ((float *)b->data)[row * ((b->broadcast_stride)[0]) + col * ((b->broadcast_stride)[1])];
     return val;
 }
+
