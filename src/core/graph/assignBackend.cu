@@ -93,6 +93,7 @@ void assignPlaceOnDeviceMemory(tensor_pool_t *pool, int32_t a_idx, std::vector<e
 
 }
 
+<<<<<<< HEAD
 std::string_view conf = R"(
 
 {
@@ -140,6 +141,8 @@ std::string_view conf = R"(
   }
 })";
 
+=======
+>>>>>>> 5155f61 (Feat/backend dispatch mode (#35))
 void assignBackendGraph(tensor_pool_t *pool,std::vector<execution_node_t *> &nodes, backend_mode backend) {
     setUpParentReference(nodes);
     if (backend == backend_mode::CPU) {
