@@ -46,15 +46,6 @@ typedef struct tensor_pool_instance tensor_pool_t;
 
 typedef struct execution_node execution_node_t;
 
-/*******************************************************************************
- * !!!!!!!! DISCARDED !!!!!!!!
- * Discarding this in favour of vector of execution_node
- *
- * Opaque graph
- * typedef struct tensor_graph_instance tensor_graph_t;
- * *****************************************************************************
- */
-typedef struct tensor_graph_instance tensor_graph_t;
 ///////////////////////////////////////////////
 // RETURN TENSOR INFORMATION
 
@@ -132,33 +123,24 @@ size_t tensor_pool_size(tensor_pool_t *pool);
 // DONE
 size_t tensor_pool_used(tensor_pool_t *pool);
 
-////////////////////////////////////////////////////////////////////////////////////////////
-// WILL LIKELY BE DEPRECEATED
 /*
- * Move the memory pool between device_type
+ * Move the node from device to host
  *
- * @param device       Name of the device to move the pool to. GPU/CPU @param t            The
- * tensor to move
- * @pool               Pool where the tensor will be allocated
+ * @param  node        The node which we want to move from device to host
  * */
-
-// DEPRECEATED
-// bool tensor_move_device(tensor_t *t, device_type target_device, tensor_pool_t *pool);
-// NEW IMPLEMENTATION
-
 // DONE
 bool execution_node_to_host(execution_node_t *node);
-////////////////////////////////////////////////////////////////////////////////////////////
+
 
 /*
  * Fetches the data of the tensor.
- * @return           Returns a void pointer to the array
+ * @return           Returns a void pointer to the data array
  * */
 // DONE
 void *tensor_get_data(tensor_t *t);
 
 /*
- * @return returns the dimension of the tensor
+ * @return the dimension of the tensor
  * */
 // DONE
 uint8_t tensor_get_ndims(tensor_t *t);
@@ -188,10 +170,20 @@ void tensor_print_data(tensor_t *t);
  * @Note               tensor_matmul expects B to be transposed and
  *                     contiguous. Call tensor_transpose(B) first.
  * */
+
 // DONE
 tensor_t *tensor_mul(tensor_pool_t *pool, tensor_t *x, tensor_t *y);
 
+/*
+ * @param pool         Takes the tensor pool.
+ * @param x            The tensor we want to square
+ *
+ * @return             Squared tensor object
+ * */
+
+// DONE
 tensor_t *tensor_square(tensor_pool_t *pool, tensor_t *x);
+
 /* The naive version of matrix multiplication
  * @param pool       Pointer to the tensor pool
  * @param x            Pointer to the tensor which will be mulptiplied
@@ -209,6 +201,7 @@ tensor_t *tensor_mul_naive(tensor_pool_t *pool, tensor_t *x, tensor_t *y);
  *
  * @return             Returns a tensor object with operation set.
  * */
+
 // DONE
 tensor_t *tensor_transpose(tensor_pool_t *pool, tensor_t *a);
 
@@ -220,6 +213,7 @@ tensor_t *tensor_transpose(tensor_pool_t *pool, tensor_t *a);
  *
  * @return             Returns a tensor object with operation set.
  * */
+
 // DONE
 tensor_t *tensor_add(tensor_pool_t *pool, tensor_t *x, tensor_t *y);
 
@@ -237,19 +231,6 @@ tensor_t *tensor_add_bias(tensor_pool_t *pool, const tensor_t *xw, const tensor_
  * */
 // DONE
 tensor_t *tensor_sub(tensor_pool_t *pool, tensor_t *a, tensor_t *b);
-/////////////////////////////////////////////////////////////
-/// DEPRECEATED tensor_mul operation handles it automatically
-// /*
-//  * Do scalar matrix multiplication
-//  * @param out          Pointer to the tensor where result will be stored
-//  * @param x            Pointer to the tensor which will be mulptiplied
-//  * @param y            Scalar with which the matrix will be multiplied
-//  *
-//  * */
-// // void tensor_scalar_mul(tensor_t *out, tensor_t *x, double y);
-//
-// upon request it can be exposed seperately
-//////////////////////////////////////////////////////////////
 
 // The activation function
 // @params out                     Output tensor
@@ -258,39 +239,60 @@ tensor_t *tensor_sub(tensor_pool_t *pool, tensor_t *a, tensor_t *b);
 // DONE
 tensor_t *tensor_relu(tensor_pool_t *pool, tensor_t *a);
 
+
+// Calculates the mean
+// @params pool                    Tensor pool
+// @a                              Tensor whose mean we want to find
+//
+// @return                         Returns the mean of the tensor
 // DONE
 tensor_t *tensor_mean(tensor_pool_t *pool, tensor_t *a);
+
 // Compares result
 // return how correct we were b/w 0-1
+
+// DONE
 tensor_t *tensor_mse_loss(tensor_pool_t *pool, tensor_t *predictions, tensor_t *target);
 
-// // Fills an existing tensor with normally distributed random numbers.
+// Fills an existing tensor with normally distributed random numbers.
+// @params  t                      Tensor we want to fill with random no.
+// @params  mean                   The mean around which we want to have the value
+// @params  std_dev                Standard deviation
+
+// DONE
 bool tensor_fill_random_normal(tensor_t *t, float mean, float std_dev);
-//
+
+
+// TODO: HAVE TO DO THIS IF WE WANT CLASSIFICATION
 // // Fused operation combining Softmax and Cross-Entropy for stability
 // tensor_t *tensor_cross_entropy_loss(tensor_pool_t *pool, const tensor_t *predictions,
 //                                     const tensor_t *targets);
 
 // ***********************************************************************************
-// TODO: HAVE TO UPDATED FUNC SIG SPEC 
 // Evalutes the operation(Forward) with depth=1
 // @return             boolean flag for status
+//
+// @note               This is atomic operations and is used internally
+//                     is for CPU computation
 // DONE
 bool tensor_evaluate( tensor_pool_t *pool,tensor_t *t,  float *d_a = nullptr, float *d_b = nullptr, float *d_res= nullptr);
+
+// Is for GPU computation
 // DONE
 bool tensor_evaluate_GPU( tensor_pool_t *pool,tensor_t *t,  float *d_a, float *d_b, float *d_res);
 
-/////////////////////////////////////////////////////////////
-// NO DESIGNING DONE HENCE NOT RECOMMENDED TO WORK AROUND USE IT JUST AS PLACEHOLDER BUT BE READY TO
-// UPDATE API below it is still unstable
 //////////////////////
 // THE BACKWARD PASS
 
 // Evalutes the operation(BACKWARD) with depth=1
 // @return             boolean flag for status
+// @note               Inplictly handle the GPU CPU transfer is a single operation
 bool tensor_backward(tensor_pool_t *pool, tensor_t *t);
 
 // The Optimizer
+// @params nodes       The graph
+// @learning_rate      The size of step
+//
 void tensor_sgd(std::vector<execution_node_t *> &nodes, float learning_rate);
 /////////////////////////////////////////////////////////////
 // GRAPH OPERATIONS
@@ -310,7 +312,7 @@ void tensor_sgd(std::vector<execution_node_t *> &nodes, float learning_rate);
 /////////////////////////////////////////////////////////////////
 
 
-/* !!!!! SIGNATURE WAS CHANGED !!!!!
+/* 
  * Topologically sort the tensors, detect dependency and return a vector of .
  * 
  * @params pool       The data pool where the execution nodes will be 
@@ -327,7 +329,7 @@ bool verifyIfDAG(tensor_pool_t *pool, tensor_t *t, std::vector<execution_node_t 
 
 /* This function marks the tensor for transfer to GPU, This also assigns the space on VRAM.
  * 
- * @params pool       The VRAM pool where GPU ops data is stored,
+ * @params pool_gpu       The VRAM pool where GPU ops data is stored,
  *                    only data is transfered not whole tensor,
  *                    ADVISED/RECOMMENDED/COMPUSLORY to give different memory pool.
  * @params nodes      The vector of execution_node_t in which original data was stored passed by refrence.
@@ -335,9 +337,20 @@ bool verifyIfDAG(tensor_pool_t *pool, tensor_t *t, std::vector<execution_node_t 
  * @return void       Doesn't return anything.
  * */
 // DONE
-void assignBackendGraph(tensor_pool_t *pool,std::vector<execution_node_t *> &nodes, backend_mode value = backend_mode::CPU);
+void assignBackendGraph(tensor_pool_t *pool_gpu,std::vector<execution_node_t *> &nodes, backend_mode value = backend_mode::CPU);
 
+/* This function is used for assigining temporary storage on GPU VRAM for GPU -> GPU part so we don't have 
+ * transfer overhead and thrashing
+ *
+ * @params pool_grad_cpu             Pool for CPU grad allocation
+ * @params pool_grad_gpu             Pool for GPU grad allocation
+ * 
+ * @params nodes                     The graph
+ * */
+//DONE
 void assignGradMemory(tensor_pool_t *pool_grad_cpu, tensor_pool_t *pool_grad_gpu, std::vector<execution_node_t *> &nodes);
+
+
 /* @params  Take execution_node_t which you wanna know
  * @returns the postion of the execution_node_t after verifyIfDAG
  * */
@@ -345,10 +358,11 @@ void assignGradMemory(tensor_pool_t *pool_grad_cpu, tensor_pool_t *pool_grad_gpu
 int32_t getPosOfNode(execution_node_t *et);
 
 // Prints all data about execution_node_t as well as tensor data
+// internally calls tensor print hence prints tensor data too
+
 // DONE
 void printExecutionNode(execution_node_t *et);
-// Previous SIGNATURE
-// bool tensor_graph_build(tensor_graph_t *g, tensor_t *t);
+
 
 /*
  * Evaluate the whole graph forward operation.
@@ -361,10 +375,13 @@ bool tensor_graph_forward_evaluate(tensor_pool_t *pool_cpu, tensor_pool_t *pool_
 /////////////////////////////////////////////////////////////////////////
 // BACKWARD PASS FUNCTIONS
 
+// Takes nodes and then sets the grads data to 0 using memset
 void gradInitializer(std::vector<execution_node_t *> &nodes);
 
+// Walk over the graph(nodes) and then run autograd
 bool tensor_graph_backward(std::vector<execution_node_t *> &nodes);
 
+// Used to transfer the gradient data from device to host
 void autogradGpuMemTranfer(std::vector<execution_node_t *> &nodes);
 
 bool save_model(const std::string& filepath, const std::vector<tensor_t*>& weights);
