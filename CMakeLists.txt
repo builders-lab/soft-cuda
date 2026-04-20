@@ -7,6 +7,11 @@ set(CMAKE_CUDA_ARCHITECTURES native)
 
 add_library(soft_lib SHARED ${LIB_SOURCE})
 
+set_target_properties(soft_lib PROPERTIES
+  CXX_STANDARD 17
+  CXX_STANDARD_REQUIRED ON
+  CXX_EXTENSIONS OFF
+)
 target_include_directories(soft_lib
   PUBLIC  "${CMAKE_CURRENT_SOURCE_DIR}/include"
   PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src/backend_cpu/include"
@@ -23,6 +28,8 @@ target_compile_options(soft_lib PRIVATE
 
 set_target_properties(soft_lib PROPERTIES
   CUDA_SEPARABLE_COMPILATION ON
+  CXX_STANDARD 17
+  CXX_STANDARD_REQUIRED ON
 )
 #
 # target_compile_options(soft_lib PUBLIC

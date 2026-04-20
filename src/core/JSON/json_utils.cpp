@@ -30,3 +30,25 @@ readJsonToMap(const std::string& filePath) {
 
     return result;
 }
+
+std::unordered_map<std::string, json>
+readDefaultToMap(std::string_view conf) {
+
+    std::unordered_map<std::string, json> result;
+
+    // Read JSON
+    json j = json::parse(conf);
+    
+
+    // Check if JSON is object
+    if (!j.is_object()) {
+        debug("JSON root is not an object");
+    }
+
+    // Convert JSON to unordered_map
+    for (auto& [key, value] : j.items()) {
+        result[key] = value;
+    }
+
+    return result;
+}

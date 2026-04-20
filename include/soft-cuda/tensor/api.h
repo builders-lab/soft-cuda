@@ -19,7 +19,7 @@ extern "C" {
 // DONE
 enum class tensor_dtype_t {
     UINT32_T,
-    INT32_T,
+    INT33_T,
     UINT64_T,
     INT64_T,
     FLOAT32_T,
@@ -355,19 +355,23 @@ void printExecutionNode(execution_node_t *et);
  * @params            graph struct for ops sequence
  * @return            boolean status flag
  * */
-bool tensor_graph_forward_evaluate(tensor_pool_t *pool_cpu, tensor_pool_t *pool_gpu, std::vector<execution_node_t *> &nodes);
+// bool tensor_graph_forward_evaluate(tensor_pool_t *pool_cpu, tensor_pool_t *pool_gpu, std::vector<execution_node_t *> &nodes);
 
 //////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////
 // BACKWARD PASS FUNCTIONS
 
-void gradInitializer(std::vector<execution_node_t *> &nodes);
+// void gradInitializer(std::vector<execution_node_t *> &nodes);
+//
+// bool tensor_graph_backward(std::vector<execution_node_t *> &nodes);
+//
+// void assignGradMemory(tensor_pool_t *pool_grad_cpu, tensor_pool_t *pool_grad_gpu, std::vector<execution_node_t *> &nodes);
+//
+// void autogradGpuMemTranfer(std::vector<execution_node_t *> &nodes);
 
-bool tensor_graph_backward(std::vector<execution_node_t *> &nodes);
 
-void assignGradMemory(tensor_pool_t *pool_grad_cpu, tensor_pool_t *pool_grad_gpu, std::vector<execution_node_t *> &nodes);
-
-void autogradGpuMemTranfer(std::vector<execution_node_t *> &nodes);
+// bool save_model(const std::string& filepath, const std::vector<tensor_t*>& weights);
+// bool load_model(const std::string& filepath, const std::vector<tensor_t*>& weights);
 
 #ifdef __cplusplus
 }
