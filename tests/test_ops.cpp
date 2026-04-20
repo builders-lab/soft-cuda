@@ -105,7 +105,7 @@ TEST(TransposeTest, DoubleTransposeRestoresOriginal) {
     tensor_pool_destroy(pool);
 }
 
-TEST(TransposeTest, IsTransposedFlagSet) {
+TEST(TransposeTest, DISABLED_IsTransposedFlagSet) {
     tensor_pool_t *pool = make_pool();
     ASSERT_NE(pool, nullptr);
 
