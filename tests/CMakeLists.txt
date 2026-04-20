@@ -17,6 +17,7 @@ add_executable(tensor_tests
   soft-cuda/tensor/test_tensor.cpp
   test_mul.cpp
   test_ops.cpp
+  test_graph.cpp
 )
 
 target_include_directories(tensor_tests PRIVATE
