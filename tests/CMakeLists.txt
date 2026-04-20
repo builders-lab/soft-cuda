@@ -23,6 +23,7 @@ add_executable(tensor_tests
 target_include_directories(tensor_tests PRIVATE
   "${CMAKE_CURRENT_SOURCE_DIR}/../include"
   "${CMAKE_CURRENT_SOURCE_DIR}/../src/core/include"
+  "${CMAKE_CURRENT_SOURCE_DIR}/../src/core/include"
   "${CMAKE_CURRENT_SOURCE_DIR}/../src/backend_cpu/include"
   "${CMAKE_CURRENT_SOURCE_DIR}/../src"
 )

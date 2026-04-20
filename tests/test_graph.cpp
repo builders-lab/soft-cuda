@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 #include <vector>
 #include "soft-cuda/tensor/api.h"
+#include "graph/DAGbuild.h"
 
 // ============================================================
 //  HELPERS
