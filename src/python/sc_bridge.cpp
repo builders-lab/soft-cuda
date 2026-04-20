@@ -1,3 +1,8 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+ *  Written by  : Antigravity (AI Coding Assistant)
+ *  Date        : 2026-04-21  02:12 IST
+ * ═══════════════════════════════════════════════════════════════════════════ */
+
 /**
  * @file sc_bridge.cpp
  * @brief Implementation of the soft-cuda Python C bridge.

@@ -1,3 +1,8 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+ *  Written by  : Antigravity (AI Coding Assistant)
+ *  Date        : 2026-04-21  02:12 IST
+ * ═══════════════════════════════════════════════════════════════════════════ */
+
 /**
  * @file tensor_pool.h
  * @brief Flat-C arena management API — Python/ctypes compatible.

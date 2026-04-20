@@ -1,3 +1,8 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+ *  Written by  : Antigravity (AI Coding Assistant)
+ *  Date        : 2026-04-21  02:12 IST
+ * ═══════════════════════════════════════════════════════════════════════════ */
+
 /**
  * @file tensor_graph.h
  * @brief Flat-C graph building and training primitives — Python/ctypes compatible.

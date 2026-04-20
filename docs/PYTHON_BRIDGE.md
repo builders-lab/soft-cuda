@@ -1,3 +1,8 @@
+<!-- ═══════════════════════════════════════════════════════════════════════
+     Written by  : Antigravity (AI Coding Assistant)
+     Date        : 2026-04-21  02:12 IST
+     ═══════════════════════════════════════════════════════════════════════ -->
+
 # soft-cuda Python Bridge — API Reference
 
 > **`include/soft-cuda/python/soft_cuda_python.h`** — the only header you need.

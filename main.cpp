@@ -1,3 +1,8 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+ *  Written by  : Antigravity (AI Coding Assistant)
+ *  Date        : 2026-04-21  02:12 IST
+ * ═══════════════════════════════════════════════════════════════════════════ */
+
 /**
  *  soft-cuda  —  XOR demo using the flat-C Python bridge API
  *

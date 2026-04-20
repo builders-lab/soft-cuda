@@ -1,3 +1,8 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+ *  Written by  : Antigravity (AI Coding Assistant)
+ *  Date        : 2026-04-21  02:12 IST
+ * ═══════════════════════════════════════════════════════════════════════════ */
+
 /**
  * @file soft_cuda_python.h
  * @brief Master include for the soft-cuda Python/ctypes bridge layer.
