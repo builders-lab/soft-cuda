@@ -3,9 +3,9 @@
 #include <string>
 #include <vector>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+// #ifdef __cplusplus
+// extern "C" {
+// #endif
 
 ///////////////////////////////////////////////
 
@@ -219,7 +219,7 @@ tensor_t *tensor_add(tensor_pool_t *pool, tensor_t *x, tensor_t *y);
 
 // Explicit broadcasting for layers (e.g., Y = XW + b)
 // DONE
-tensor_t *tensor_add_bias(tensor_pool_t *pool, const tensor_t *xw, const tensor_t *bias);
+tensor_t *tensor_add_bias(tensor_pool_t *pool, tensor_t *xw, tensor_t *bias);
 
 /*
  * Do matrix subtraction
@@ -387,6 +387,6 @@ void autogradGpuMemTranfer(std::vector<execution_node_t *> &nodes);
 bool save_model(const std::string& filepath, const std::vector<tensor_t*>& weights);
 bool load_model(const std::string& filepath, const std::vector<tensor_t*>& weights);
 
-#ifdef __cplusplus
-}
-#endif
+// #ifdef __cplusplus
+// }
+// #endif
