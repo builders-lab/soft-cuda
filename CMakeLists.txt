@@ -42,9 +42,7 @@ target_compile_options(soft_lib PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-g>)
 # target_link_options(soft_lib PUBLIC
 #   $<$<CONFIG:Debug>:-fsanitize=address>
 # )
-add_executable(soft main.cpp)
 
-target_link_libraries(soft PRIVATE soft_lib)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Python C bridge — flat-C shared library for use with ctypes / cffi
@@ -64,7 +62,9 @@ target_include_directories(soft_cuda_python
   PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src"
 )
 
+add_executable(soft main.cpp)
 target_link_libraries(soft_cuda_python PRIVATE soft_lib)
+target_link_libraries(soft PRIVATE soft_cuda_python)
 
 # Ensure all sc_* symbols are exported on Linux/macOS
 if(NOT WIN32)

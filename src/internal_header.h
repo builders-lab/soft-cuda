@@ -2,6 +2,7 @@
 // PUBLIC DECLARATIONS
 #include "../include/soft-cuda/tensor/api.h"
 #include "../include/soft-cuda/tensor/debug_api.h"
+#include "../include/soft-cuda/python/soft_cuda_python.h"
 
 // PRIVATE DECLARATIONS
 #include "./core/include/tensor/tensor.h"

@@ -19,7 +19,7 @@ extern "C" {
 // DONE
 enum class tensor_dtype_t {
     UINT32_T,
-    INT33_T,
+    INT32_T,
     UINT64_T,
     INT64_T,
     FLOAT32_T,

@@ -24,6 +24,8 @@
 // Pull in everything: public + private headers & all internal APIs
 #include "../include/soft-cuda/tensor/api.h"
 #include "../include/soft-cuda/python/soft_cuda_python.h"
+#include "internal_header.h"
+
 
 #include <vector>
 #include <cstring>   /* memcpy */
