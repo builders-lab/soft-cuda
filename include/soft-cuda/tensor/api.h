@@ -388,6 +388,9 @@ void autogradGpuMemTranfer(std::vector<execution_node_t *> &nodes);
 bool save_model(const std::string& filepath, const std::vector<tensor_t*>& weights);
 bool load_model(const std::string& filepath, const std::vector<tensor_t*>& weights);
 
+void *tensor_get_grad(tensor_t *t);
+
+bool tensor_get_is_transposed(tensor_t *t);
 // #ifdef __cplusplus
 // }
 // #endif

@@ -108,6 +108,22 @@ void sc_tensor_print_data(sc_tensor_t *t);
  */
 int sc_tensor_fill_random_normal(sc_tensor_t *t, float mean, float std_dev);
 
+/**
+ * Fetch a raw pointer to the tensor's gradient data buffer.
+ *
+ * @param t  The tensor.
+ * @return   void* to the underlying gradient data array.
+ */
+void *sc_tensor_grad_get_data(sc_tensor_t *t);
+
+/**
+ * Identify if a tensor is transposed or not.
+ *
+ * @param t  The tensor.
+ * @return   A boolean with true for is transposed and false for not transposed.
+ * */
+bool sc_tensor_is_transposed(tensor_t *t);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

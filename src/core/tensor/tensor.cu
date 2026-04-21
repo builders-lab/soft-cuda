@@ -241,6 +241,10 @@ bool tensor_evaluate_GPU([[maybe_unused]] tensor_pool_t *pool, [[maybe_unused]]t
 
 void *tensor_get_data(tensor_t *t) { return t->data; }
 
+void *tensor_get_grad(tensor_t *t) { return t->grad->data; }
+
+bool tensor_get_is_transposed(tensor_t *t) { return t->is_transposed; }
+
 uint8_t tensor_get_ndims(tensor_t *t) { return t->ndims; }
 
 uint32_t *tensor_get_dims(tensor_t *t) { return t->dims; }
