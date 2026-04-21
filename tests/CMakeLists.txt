@@ -4,6 +4,10 @@ set(CMAKE_CXX_STANDARD 23)
 if(POLICY CMP0135)
   cmake_policy(SET CMP0135 NEW)
 endif()
+find_package(CUDAToolkit QUIET)
+if(CUDAToolkit_FOUND)
+    target_compile_definitions(tensor_tests PRIVATE HAS_CUDA=1)
+endif()
 
 include(FetchContent)
 FetchContent_Declare(
@@ -18,6 +22,8 @@ add_executable(tensor_tests
   test_mul.cpp
   test_ops.cpp
   test_graph.cpp
+  test_backprop.cpp
+  test_backend.cpp
 )
 
 target_include_directories(tensor_tests PRIVATE
