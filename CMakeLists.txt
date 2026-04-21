@@ -1,12 +1,19 @@
 cmake_minimum_required(VERSION 3.16)
 project(soft-cuda LANGUAGES CXX CUDA)
 
+# Core library sources — explicitly exclude the Python bridge subdir
 file(GLOB_RECURSE LIB_SOURCE src/*.cu src/*.cpp src/*.hpp src/*.h)
+list(FILTER LIB_SOURCE EXCLUDE REGEX ".*/python/.*")
 
 set(CMAKE_CUDA_ARCHITECTURES native)
 
 add_library(soft_lib SHARED ${LIB_SOURCE})
 
+set_target_properties(soft_lib PROPERTIES
+  CXX_STANDARD 17
+  CXX_STANDARD_REQUIRED ON
+  CXX_EXTENSIONS OFF
+)
 target_include_directories(soft_lib
   PUBLIC  "${CMAKE_CURRENT_SOURCE_DIR}/include"
   PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src/backend_cpu/include"
@@ -23,6 +30,8 @@ target_compile_options(soft_lib PRIVATE
 
 set_target_properties(soft_lib PROPERTIES
   CUDA_SEPARABLE_COMPILATION ON
+  CXX_STANDARD 17
+  CXX_STANDARD_REQUIRED ON
 )
 #
 # target_compile_options(soft_lib PUBLIC
@@ -33,9 +42,34 @@ target_compile_options(soft_lib PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-g>)
 # target_link_options(soft_lib PUBLIC
 #   $<$<CONFIG:Debug>:-fsanitize=address>
 # )
-add_executable(soft main.cpp)
 
-target_link_libraries(soft PRIVATE soft_lib)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Python C bridge — flat-C shared library for use with ctypes / cffi
+# ─────────────────────────────────────────────────────────────────────────────
+add_library(soft_cuda_python SHARED src/python/sc_bridge.cpp)
+
+set_target_properties(soft_cuda_python PROPERTIES
+  CXX_STANDARD 17
+  CXX_STANDARD_REQUIRED ON
+  CXX_EXTENSIONS OFF
+)
+
+target_include_directories(soft_cuda_python
+  PUBLIC  "${CMAKE_CURRENT_SOURCE_DIR}/include"
+  PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src/backend_cpu/include"
+  PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src/core/include"
+  PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src"
+)
+
+add_executable(soft main.cpp)
+target_link_libraries(soft_cuda_python PRIVATE soft_lib)
+target_link_libraries(soft PRIVATE soft_cuda_python)
+
+# Ensure all sc_* symbols are exported on Linux/macOS
+if(NOT WIN32)
+  target_compile_options(soft_cuda_python PRIVATE -fvisibility=default)
+endif()
 
 enable_testing()
 add_subdirectory(tests)

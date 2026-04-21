@@ -1,4 +1,5 @@
 #include "internal_header.h"
+#include <filesystem>
 // #include "vector"
 #include <iostream>
 #include <cuda_runtime.h>
@@ -92,6 +93,55 @@ void assignPlaceOnDeviceMemory(tensor_pool_t *pool, int32_t a_idx, std::vector<e
 
 }
 
+std::string_view conf = R"(
+
+{
+  "meta": {
+    "soft_version": "0.1.0",
+    "device_hash": "3f8a9c2d7b1e6f4a8c0d123456789abcdeffedcba9876543210abcdef12345678",
+    "generated_at": "2026-03-18T09:00:00Z"
+  },
+  "device": {
+
+    "type": "cuda",
+    "compute_capability": 8.6,
+    "vram_mb": 8192
+  },
+  "ops": {
+    "matmul": [
+      {
+        "min": 0,
+        "max": 127,
+        "backend": "cpu"
+      },
+      {
+        "min": 128,
+        "max": 511,
+        "backend": "cuda"
+      },
+      {
+        "min": 512,
+        "max": 4096,
+        "backend": "cuda"
+      }
+    ],
+    "relu": [
+      {
+        "backend": "cuda"
+      }
+    ],
+    "add": [
+      { "min": 0, "max": 127, "backend": "cpu" },
+      { "min": 128, "max": 4096, "backend": "cuda" }
+    ]
+    },
+  "pool": {
+    "device": "cuda",
+    "block_size": 2097152
+  }
+})";
+
+
 void assignBackendGraph(tensor_pool_t *pool,std::vector<execution_node_t *> &nodes, backend_mode backend) {
     setUpParentReference(nodes);
     if (backend == backend_mode::CPU) {
@@ -103,7 +153,16 @@ void assignBackendGraph(tensor_pool_t *pool,std::vector<execution_node_t *> &nod
             assignBackendGpu(node);
         }
     } else if (backend == backend_mode::HYBRID) {
-        json data = readJsonToMap("/home/wslarch/Documents/Coding/DEV/soft/soft-cuda/src/init/config/CONFIG.soft");
+        json data{};
+        std::string path{};
+        if (getenv("HOME") != nullptr) {
+            static std::string path = std::string(getenv("HOME")) + "/.config/soft-cuda/CONFIG.soft";
+        }
+        if (std::filesystem::exists(path)) {
+            data = readJsonToMap(path); // passing the char pointer
+        } else {
+            data = readDefaultToMap(conf);
+        }
         for (auto node : nodes) {
             assignBackend(node, data);
         }
