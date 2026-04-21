@@ -351,6 +351,7 @@ void assignBackendGraph(tensor_pool_t *pool_gpu,std::vector<execution_node_t *> 
 void assignGradMemory(tensor_pool_t *pool_grad_cpu, tensor_pool_t *pool_grad_gpu, std::vector<execution_node_t *> &nodes);
 
 
+void assignGradMemory(tensor_pool_t *pool_grad_cpu, tensor_pool_t *pool_grad_gpu, std::vector<execution_node_t *> &nodes);
 /* @params  Take execution_node_t which you wanna know
  * @returns the postion of the execution_node_t after verifyIfDAG
  * */
