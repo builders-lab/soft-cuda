@@ -122,7 +122,7 @@ void *sc_tensor_grad_get_data(sc_tensor_t *t);
  * @param t  The tensor.
  * @return   A boolean with true for is transposed and false for not transposed.
  * */
-bool sc_tensor_is_transposed(tensor_t *t);
+bool sc_tensor_is_transposed(sc_tensor_t *t);
 
 #ifdef __cplusplus
 } /* extern "C" */
