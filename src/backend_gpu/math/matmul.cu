@@ -27,11 +27,17 @@ cublasHandle_t handle = NULL;
 bool tensor_mul_op_cuda(tensor_t *t, float *d_a, float *d_b, float *d_res) {
     uint32_t M = t->a->dims[0];
     uint32_t K = t->a->dims[1];
-    uint32_t N = t->b->dims[1];
+    uint32_t N = t->b->is_transposed ? t->b->dims[0] : t->b->dims[1];
     
     float alpha = 1.0f, beta = 0.0f;
-    if (handle == NULL) cublasCreate(&handle);
-    cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, N, M, K, &alpha, d_b, N, d_a, K, &beta, d_res, N);
+
+    if (handle == NULL) {
+        cublasStatus_t s = cublasCreate(&handle);
+        if (s != CUBLAS_STATUS_SUCCESS) {
+            debug("tensor_mul_op_cuda: cublasCreate failed (%d)\n", (int)s);
+            return false;
+        }
+    }
 
     // if (M % 128 == 0 && N % 128 == 0 && K % 16 == 0) {
     //     dim3 block(256);
@@ -43,6 +49,22 @@ bool tensor_mul_op_cuda(tensor_t *t, float *d_a, float *d_b, float *d_res) {
     //     dim3 gridDim(CEIL_DIV(N, BLOCK_SIZE), CEIL_DIV(M, BLOCK_SIZE));
     //     sgemm_naive<<<gridDim, blockDim>>>(d_a, d_b, d_res, M, K, N);
     // }
+
+    cublasStatus_t stat = cublasSgemm(
+        handle,
+        CUBLAS_OP_N, CUBLAS_OP_N,
+        (int)N, (int)M, (int)K,
+        &alpha,
+        d_b, (int)N,
+        d_a, (int)K,
+        &beta,
+        d_res, (int)N
+    );
+
+    if (stat != CUBLAS_STATUS_SUCCESS) {
+        debug("tensor_mul_op_cuda: cublasSgemm failed (%d)\n", (int)stat);
+        return false;
+    }
 
     cudaError_t err = cudaDeviceSynchronize();
     if (err != cudaSuccess) {

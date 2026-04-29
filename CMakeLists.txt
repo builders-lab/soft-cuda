@@ -9,6 +9,7 @@ list(FILTER LIB_SOURCE EXCLUDE REGEX ".*/profiler\.cu$")
 set(CMAKE_CUDA_ARCHITECTURES native)
 
 add_library(soft_lib SHARED ${LIB_SOURCE})
+target_link_libraries(soft_lib PRIVATE cublas)
 
 set_target_properties(soft_lib PROPERTIES
   CXX_STANDARD 17
@@ -67,7 +68,6 @@ target_include_directories(soft_cuda_python
 add_executable(soft main.cpp)
 target_link_libraries(soft_cuda_python PRIVATE soft_lib)
 target_link_libraries(soft PRIVATE soft_cuda_python)
-target_link_libraries(soft_lib PRIVATE cublas)
 # Ensure all sc_* symbols are exported on Linux/macOS
 if(NOT WIN32)
   target_compile_options(soft_cuda_python PRIVATE -fvisibility=default)

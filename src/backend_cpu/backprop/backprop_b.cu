@@ -129,12 +129,12 @@ bool backprop_cpu(execution_node_t *node) {
         // TODO: Implement here
         success = false;
         break;
-    // case tensor_op_t::MUL_MATRIX:
-    //     assert(node->t->a != NULL);
-    //     assert(node->t->b != NULL);
-    //     assert(node->t->a->dtype == node->t->b->dtype);
-    //     success = tensor_mul_grad_op_matrix(node);
-    //     break;
+    case tensor_op_t::MUL_MATRIX:
+        assert(node->t->a != NULL);
+        assert(node->t->b != NULL);
+        assert(node->t->a->dtype == node->t->b->dtype);
+        success = tensor_mul_grad_op_matrix(node);
+        break;
     case tensor_op_t::MUL_SCALAR:
         assert(node->t->a != NULL);
         assert(node->t->b != NULL);

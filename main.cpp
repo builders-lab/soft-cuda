@@ -219,7 +219,7 @@ int main(void) {
         pool_grad_cpu,
         pool_grad_gpu,
         loss,
-        SC_BACKEND_CPU          /* use SC_BACKEND_GPU or SC_BACKEND_HYBRID if CUDA is available */
+        SC_BACKEND_GPU          /* use SC_BACKEND_GPU or SC_BACKEND_HYBRID if CUDA is available */
     );
     assert(graph != NULL);
 
@@ -271,6 +271,8 @@ int main(void) {
     banner("7. Final predictions");
 
     sc_graph_forward(pool, pool_gpu, graph);
+    // Was cause of error
+    sc_autograd_gpu_transfer(graph);  
 
     float *inputs      = (float *)sc_tensor_get_data(X);
     float *targets     = (float *)sc_tensor_get_data(Y);
@@ -314,6 +316,7 @@ int main(void) {
 
     /* Forward pass after reloading to confirm predictions match */
     sc_graph_forward(pool, pool_gpu, graph);
+    sc_autograd_gpu_transfer(graph);
 
     printf("  Post-reload loss : %.8f\n", sc_graph_get_loss(graph));
 
