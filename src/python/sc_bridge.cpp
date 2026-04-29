@@ -295,10 +295,18 @@ extern "C" sc_graph_t *sc_build_graph(sc_pool_t *meta_pool,
     sc_graph_t *g = sc_graph_create();
     if (g == nullptr) return nullptr;
 
+    if (meta_pool == nullptr || pool_gpu == nullptr || pool_grad_cpu == nullptr || pool_grad_gpu == nullptr) {
+        sc_graph_destroy(g);
+        return nullptr;
+    }
+
     if (!verifyIfDAG(meta_pool, loss, g->nodes)) {
         sc_graph_destroy(g);
         return nullptr;
     }
+
+
+    setUpParentReference(g->nodes);
 
     assignBackendGraph(pool_gpu, g->nodes, to_backend_mode(backend_mode_val));
     assignGradMemory(pool_grad_cpu, pool_grad_gpu, g->nodes);
@@ -312,7 +320,7 @@ extern "C" void sc_graph_step(sc_pool_t *pool_cpu,
                               float learning_rate) {
     if (g == nullptr) return;
     tensor_graph_forward_evaluate(pool_cpu, pool_gpu, g->nodes);
-    autogradGpuMemTranfer(g->nodes);
+    //autogradGpuMemTranfer(g->nodes); Not needed anymore cause we good
     gradInitializer(g->nodes);
     tensor_graph_backward(g->nodes);
     tensor_sgd(g->nodes, learning_rate);

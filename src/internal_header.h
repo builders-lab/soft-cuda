@@ -3,6 +3,7 @@
 #include "../include/soft-cuda/tensor/api.h"
 #include "../include/soft-cuda/tensor/debug_api.h"
 #include "../include/soft-cuda/python/soft_cuda_python.h"
+#include "../include/soft-cuda/profiler/profiler_core.h"
 
 // PRIVATE DECLARATIONS
 #include "./core/include/tensor/tensor.h"

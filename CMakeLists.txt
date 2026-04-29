@@ -4,6 +4,7 @@ project(soft-cuda LANGUAGES CXX CUDA)
 # Core library sources — explicitly exclude the Python bridge subdir
 file(GLOB_RECURSE LIB_SOURCE src/*.cu src/*.cpp src/*.hpp src/*.h)
 list(FILTER LIB_SOURCE EXCLUDE REGEX ".*/python/.*")
+list(FILTER LIB_SOURCE EXCLUDE REGEX ".*/profiler\.cu$")
 
 set(CMAKE_CUDA_ARCHITECTURES native)
 
@@ -19,6 +20,7 @@ target_include_directories(soft_lib
   PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src/backend_cpu/include"
   PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src/core/include"
   PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src"
+  PRIVATE "${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}"
 )
 
 target_compile_options(soft_lib PRIVATE
@@ -44,9 +46,9 @@ target_compile_options(soft_lib PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-g>)
 # )
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+
 # Python C bridge — flat-C shared library for use with ctypes / cffi
-# ─────────────────────────────────────────────────────────────────────────────
+
 add_library(soft_cuda_python SHARED src/python/sc_bridge.cpp)
 
 set_target_properties(soft_cuda_python PROPERTIES
@@ -73,3 +75,24 @@ endif()
 
 enable_testing()
 add_subdirectory(tests)
+
+# HARDWARE PROFILER
+
+add_executable(soft_profiler src/init/config/profiler.cu)
+set_target_properties(soft_profiler PROPERTIES
+  CUDA_SEPARABLE_COMPILATION ON
+  CXX_STANDARD 17
+  CXX_STANDARD_REQUIRED ON
+)
+target_include_directories(soft_profiler
+  PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include"
+  PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src/core/include"
+  PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src"
+)
+target_link_libraries(soft_profiler PRIVATE soft_lib)
+
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/benchmarks/CMakeLists.txt")
+  add_subdirectory(benchmarks)
+endif()
+
+
