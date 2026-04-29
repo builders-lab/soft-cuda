@@ -219,7 +219,7 @@ int main(void) {
         pool_grad_cpu,
         pool_grad_gpu,
         loss,
-        SC_BACKEND_CPU          /* use SC_BACKEND_GPU or SC_BACKEND_HYBRID if CUDA is available */
+        SC_BACKEND_GPU          /* use SC_BACKEND_GPU or SC_BACKEND_HYBRID if CUDA is available */
     );
     assert(graph != NULL);
 

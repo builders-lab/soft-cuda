@@ -30,4 +30,5 @@
 #include "backend_gpu/include/math/mean.h"
 #include "backend_gpu/include/math/scalar_mul.h"
 #include "backend_gpu/include/math/broadcast_add.h"
+#include "backend_gpu/include/backprop/backprop_gpu.h"
 // clang-format on
