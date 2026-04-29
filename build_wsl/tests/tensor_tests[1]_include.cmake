@@ -1,5 +1,0 @@
-if(EXISTS "/home/wslarch/Documents/Coding/DEV/soft/soft-cuda/build_wsl/tests/tensor_tests[1]_tests.cmake")
-  include("/home/wslarch/Documents/Coding/DEV/soft/soft-cuda/build_wsl/tests/tensor_tests[1]_tests.cmake")
-else()
-  add_test(tensor_tests_NOT_BUILT tensor_tests_NOT_BUILT)
-endif()
