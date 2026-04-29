@@ -168,7 +168,7 @@ static void bench_matmul() {
     };
 
     // run(SC_BACKEND_CPU, "Matmul 512x512 [CPU naive]");
-    run(SC_BACKEND_GPU, "Matmul 512x512 [GPU sgemm]");
+    run(SC_BACKEND_GPU, "Matmul 4096x4096 [GPU sgemm]");
     printf("-----------------------------------------RUNING CUBLAS_OP_N--------------------------------------\n");
     run_cublas();
 

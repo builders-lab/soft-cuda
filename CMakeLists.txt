@@ -39,7 +39,7 @@ set_target_properties(soft_lib PROPERTIES
 # target_compile_options(soft_lib PUBLIC
 #   $<$<AND:$<CONFIG:Debug>,$<COMPILE_LANGUAGE:CXX>>:-fsanitize=address>
 # )
-target_compile_options(soft_lib PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-g>)
+target_compile_options(soft_lib PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-g --expt-relaxed-constexpr>)
 #
 # target_link_options(soft_lib PUBLIC
 #   $<$<CONFIG:Debug>:-fsanitize=address>
@@ -67,7 +67,7 @@ target_include_directories(soft_cuda_python
 add_executable(soft main.cpp)
 target_link_libraries(soft_cuda_python PRIVATE soft_lib)
 target_link_libraries(soft PRIVATE soft_cuda_python)
-
+target_link_libraries(soft_lib PRIVATE cublas)
 # Ensure all sc_* symbols are exported on Linux/macOS
 if(NOT WIN32)
   target_compile_options(soft_cuda_python PRIVATE -fvisibility=default)

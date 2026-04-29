@@ -55,10 +55,10 @@ print()
 
 # Matmul 512×512
 hline()
-print("  Benchmark 2: Matmul 512×512  [PyTorch CPU]")
+print("  Benchmark 2: Matmul 4096×4096  [PyTorch GPU]")
 hline()
 
-M, K, Np = 512, 512, 512
+M, K, Np = 4096, 4096, 4096
 A = torch.randn(M, K, device=device)
 B = torch.randn(K, Np, device=device)
 total_flops = 2 * M * K * Np

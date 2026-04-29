@@ -1,0 +1,31 @@
+
+============== OUTPUT OF echo * ============================
+
+benchmarks build build_wsl CMakeLists.txt compile_commands.json docs include main.cpp make.sh model.bin notes README.md requirements.txt scripts src summary.txt tests
+
+
+============== OUTPUT OF ls -a ==============================
+.cache
+.git
+.github
+.venv
+benchmarks
+build
+build_wsl
+docs
+include
+notes
+scripts
+src
+tests
+.clang-format
+.gitignore
+CMakeLists.txt
+compile_commands.json -> build/compile_commands.json
+main.cpp
+make.sh
+model.bin
+README.md
+requirements.txt
+summary.txt
+temp
