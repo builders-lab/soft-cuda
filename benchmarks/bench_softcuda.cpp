@@ -4,6 +4,7 @@
 
 #include "soft-cuda/tensor/api.h"
 #include "soft-cuda/python/soft_cuda_python.h"
+#include <cublas_v2.h>
 
 #include <cassert>
 #include <chrono>
@@ -95,9 +96,9 @@ static void bench_add() {
 }
 
 static void bench_matmul() {
-    header("Benchmark 2: Matmul 512×512");
+    header("Benchmark 2: Matmul 4096×4096");
 
-    const uint32_t M = 512, K = 512, N = 512;
+    const uint32_t M = 4096, K = 4096, N = 4096;
     const uint32_t total_flops = 2 * M * K * N;  
     float *A = new float[M * K];
     float *B = new float[K * N];
@@ -134,13 +135,49 @@ static void bench_matmul() {
         sc_pool_destroy(pool); sc_pool_destroy(meta);
         sc_pool_destroy(gpc); sc_pool_destroy(gpg); sc_pool_destroy(pgpu);
     };
+    auto run_cublas = [&]() {
+        float *d_a, *d_b, *d_c;
+        cudaMalloc((void**)&d_a, M*K*sizeof(float));
+        cudaMalloc((void**)&d_b, K*N*sizeof(float));
+        cudaMalloc((void**)&d_c, M*N*sizeof(float));
+        cudaMemcpy(d_a, A, M*K*sizeof(float), cudaMemcpyHostToDevice);
+        cudaMemcpy(d_b, B, K*N*sizeof(float), cudaMemcpyHostToDevice);
 
-    run(SC_BACKEND_CPU, "Matmul 512x512 [CPU naive]");
+        cublasHandle_t handle;
+        cublasCreate(&handle);
+        float alpha = 1.0f, beta = 0.0f;
+
+        // warmup
+        cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, N, M, K, &alpha, d_b, N, d_a, K, &beta, d_c, N);
+        cudaDeviceSynchronize();
+
+        double total = 0;
+        for (int r = 0; r < REPS; r++) {
+            double t0 = now_ms();
+            cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, N, M, K, &alpha, d_b, N, d_a, K, &beta, d_c, N);
+            cudaDeviceSynchronize();
+            total += now_ms() - t0;
+        }
+
+        double ms = total / REPS;
+        double gflops = (double)total_flops / ms * 1e-6;
+        printf("  %-34s  %8.2f ms   %6.2f GFLOPs\n", "Matmul 4096x4096 [cuBLAS]", ms, gflops);
+
+        cublasDestroy(handle);
+        cudaFree(d_a); cudaFree(d_b); cudaFree(d_c);
+    };
+
+    // run(SC_BACKEND_CPU, "Matmul 512x512 [CPU naive]");
     run(SC_BACKEND_GPU, "Matmul 512x512 [GPU sgemm]");
+    printf("-----------------------------------------RUNING CUBLAS_OP_N--------------------------------------\n");
+    run_cublas();
 
     delete[] A; delete[] B;
     printf("\n");
 }
+
+
+
 
 static void bench_xor_training(int backend_flag, const char *label) {
     float X_data[] = {0,0, 0,1, 1,0, 1,1};

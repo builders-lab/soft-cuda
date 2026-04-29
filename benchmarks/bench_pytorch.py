@@ -19,8 +19,8 @@ import time
 import torch
 import torch.nn as nn
 import torch.optim as optim
-
-torch.set_num_threads(1)   # single-threaded for fair comp
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(f"  Running on: {torch.cuda.get_device_name(0)}\n")
 
 REPS = 20
 
@@ -39,14 +39,15 @@ print("  Benchmark 1: Element-wise ADD  (1M float32)  [PyTorch CPU]")
 hline()
 
 N = 1024 * 1024
-a = torch.ones(N)
-b = torch.ones(N)
+a = torch.ones(N, device=device)
+b = torch.ones(N, device=device)
 
 times = []
 for _ in range(REPS):
+    torch.cuda.synchronize()
     t0 = time.perf_counter()
     c = a + b
-    _ = c[0].item()   # force eval
+    torch.cuda.synchronize()
     times.append((time.perf_counter() - t0) * 1e3)
 
 result("ADD [PyTorch CPU]", sum(times)/len(times), N * 1e-9)
@@ -58,15 +59,16 @@ print("  Benchmark 2: Matmul 512×512  [PyTorch CPU]")
 hline()
 
 M, K, Np = 512, 512, 512
-A = torch.randn(M, K)
-B = torch.randn(K, Np)
+A = torch.randn(M, K, device=device)
+B = torch.randn(K, Np, device=device)
 total_flops = 2 * M * K * Np
 
 times = []
 for _ in range(REPS):
+    torch.cuda.synchronize()
     t0 = time.perf_counter()
     C = torch.mm(A, B)
-    _ = C[0, 0].item()
+    torch.cuda.synchronize()
     times.append((time.perf_counter() - t0) * 1e3)
 
 result("Matmul 512×512 [PyTorch OpenBLAS]",
@@ -89,7 +91,9 @@ class XORNet(nn.Module):
     def forward(self, x):
         return self.l2(torch.relu(self.l1(x)))
 
-model = XORNet()
+X = X.to(device)
+Y = Y.to(device)
+model = XORNet().to(device)
 opt = optim.SGD(model.parameters(), lr=0.05)
 loss_fn = nn.MSELoss()
 
@@ -115,17 +119,63 @@ hline()
 N_billion = 100 * 1000 * 1000
 print("  [Allocating 400MB Host Memory...]")
 # Use torch.ones to mimic the C++ benchmark
-A_billion = torch.ones(N_billion, dtype=torch.float32)
+A_billion = torch.ones(N_billion, dtype=torch.float32, device=device)
 
 times = []
-for _ in range(5): # Faster now
+for _ in range(5):
+    torch.cuda.synchronize()
     t0 = time.perf_counter()
     M = A_billion.mean()
-    _ = M.item()
+    torch.cuda.synchronize()
     times.append((time.perf_counter() - t0) * 1e3)
 
 result("Mean 100M [PyTorch CPU]", sum(times)/len(times))
 print(f"  (Mean={M.item():.1f})")
+print()
+
+hline()
+print("  Benchmark 6: Deep MLP (4-Layer, 100 epochs, SGD)")
+hline()
+
+class DeepMLP(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Linear(128, 256), nn.ReLU(),
+            nn.Linear(256, 256), nn.ReLU(),
+            nn.Linear(256, 128), nn.ReLU(),
+            nn.Linear(128, 1)
+        )
+    def forward(self, x):
+        return self.net(x)
+
+Xm = torch.randn(1024, 128, device=device)
+Ym = torch.randn(1024, 1, device=device)
+mlp = DeepMLP().to(device)
+opt_mlp = optim.SGD(mlp.parameters(), lr=0.01)
+loss_fn2 = nn.MSELoss()
+
+# warmup
+for _ in range(5):
+    opt_mlp.zero_grad()
+    loss_fn2(mlp(Xm), Ym).backward()
+    opt_mlp.step()
+
+torch.cuda.synchronize()
+t0 = time.perf_counter()
+for epoch in range(1, 101):
+    opt_mlp.zero_grad()
+    pred = mlp(Xm)
+    loss = loss_fn2(pred, Ym)
+    loss.backward()
+    opt_mlp.step()
+    if epoch % 20 == 0:
+        torch.cuda.synchronize()
+        print(f"  Epoch {epoch}/100 | Loss: {loss.item():.6f}")
+torch.cuda.synchronize()
+elapsed = (time.perf_counter() - t0) * 1e3
+result("Deep MLP [PyTorch GPU]", elapsed)
+result("Per epoch", elapsed / 100)
 print()
 
 hline()
