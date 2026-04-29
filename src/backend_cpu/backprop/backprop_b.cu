@@ -1,5 +1,5 @@
 #include "internal_header.h"
-
+#include <cuda_runtime.h>
 
 // We are gonna write a backprop fucntion for matmul cause that is easy thing to do
 // Since our backprop is an eagar evaluation we will make tensor objects inside the function
@@ -12,13 +12,26 @@
 void gradInitializer(std::vector<execution_node_t *> &nodes) {
     for (auto &node : nodes) {
         if (!node->t->grad_compute) continue;
-        memset(node->t->grad->data, 0,node->t->grad->nvalues * sizeof(float));
-        // TODO: We are not zeroing the GPU will have to do that
+        // CPU
+        memset(node->t->grad->data, 0, node->t->grad->nvalues * sizeof(float));
+        // GPU
+        if (node->device_ptr_grad != NULL) {
+            cudaMemset(node->device_ptr_grad, 0,
+                       node->t->nvalues * sizeof(float));
+        }
     }
+    // Seeding root node gradient
     if (!nodes.empty()) {
         execution_node_t *root = nodes.back();
-        if (root->t != nullptr && root->t->grad != nullptr && root->t->grad->data != nullptr) {
-            ((float*)root->t->grad->data)[0] = 1.0f;
+        if (root->t != nullptr && root->t->grad != nullptr &&
+            root->t->grad->data != nullptr) {
+            ((float *)root->t->grad->data)[0] = 1.0f;
+            // if on GPU then seed it don't know if it;s even possible
+            if (root->device_ptr_grad != NULL) {
+                float one = 1.0f;
+                cudaMemcpy(root->device_ptr_grad, &one,
+                           sizeof(float), cudaMemcpyHostToDevice);
+            }
         }
     }
 }
@@ -31,18 +44,65 @@ void gradInitializer(std::vector<execution_node_t *> &nodes) {
 bool backprop__(std::vector<execution_node_t *> &nodes) {
     for (int i = (int)nodes.size() - 1; i >= 0; i--) {
         execution_node_t *node = nodes[(size_t)i];
-        // Cause it's not needed
-        if (!node->t->grad_compute)
-            continue;
-        // Cause it's super child
-        if (node->t->op == tensor_op_t::NONE)
-            continue;
-        bool success{false};
+        if (!node->t->grad_compute) continue;
+        if (node->t->op == tensor_op_t::NONE) continue;
+
+        bool success = false;
+
         if (node->device_ptr_grad != NULL) {
-            success = backprop_gpu(node);
+            //  Resolve parent execution nodes for the GPU backward kernels 
+            execution_node_t *parent_a = nullptr;
+            execution_node_t *parent_b = nullptr;
+            int32_t a_idx = getTheExecutionNodeIndex(node, 0);
+            int32_t b_idx = getTheExecutionNodeIndex(node, 1);
+            if (a_idx >= 0) parent_a = nodes[(size_t)a_idx];
+            if (b_idx >= 0) parent_b = nodes[(size_t)b_idx];
+
+            success = backprop_gpu_dispatch(node, parent_a, parent_b);
+            if (!success) {
+                 // Graceful fallback: copy grad from GPU, run CPU backward 
+                debug("backprop__: GPU backward unsupported for op=%d, falling back to CPU\n",
+                      (int)node->t->op);
+                //  Pull this node's grad from GPU to CPU 
+                if (node->device_ptr_grad != NULL && node->t->grad != NULL) {
+                    cudaMemcpy(node->t->grad->data, node->device_ptr_grad,
+                               node->t->grad->nvalues * sizeof(float),
+                               cudaMemcpyDeviceToHost);
+                }
+                 // Pull parent forward data from GPU if needed 
+                if (parent_a && parent_a->device_ptr != NULL &&
+                    parent_a->t->device == device_type::GPU) {
+                    cudaMemcpy(parent_a->t->data, parent_a->device_ptr,
+                               parent_a->t->nvalues * sizeof(float),
+                               cudaMemcpyDeviceToHost);
+                }
+                if (parent_b && parent_b->device_ptr != NULL &&
+                    parent_b->t->device == device_type::GPU) {
+                    cudaMemcpy(parent_b->t->data, parent_b->device_ptr,
+                               parent_b->t->nvalues * sizeof(float),
+                               cudaMemcpyDeviceToHost);
+                }
+                success = backprop_cpu(node);
+                // Push parent grads back to GPU so SGD sees them 
+                if (parent_a && parent_a->device_ptr_grad != NULL &&
+                    parent_a->t->grad != NULL) {
+                    cudaMemcpy(parent_a->device_ptr_grad,
+                               parent_a->t->grad->data,
+                               parent_a->t->grad->nvalues * sizeof(float),
+                               cudaMemcpyHostToDevice);
+                }
+                if (parent_b && parent_b->device_ptr_grad != NULL &&
+                    parent_b->t->grad != NULL) {
+                    cudaMemcpy(parent_b->device_ptr_grad,
+                               parent_b->t->grad->data,
+                               parent_b->t->grad->nvalues * sizeof(float),
+                               cudaMemcpyHostToDevice);
+                }
+            }
         } else {
             success = backprop_cpu(node);
         }
+
         if (!success) {
             debug("backprop__: FUBAR at node pos=%d\n", (int)node->pos);
             return false;
@@ -132,16 +192,10 @@ bool backprop_cpu(execution_node_t *node) {
     return success;
 }
 
-// =============================================================================
-// GPU BACKWARD DISPATCHER (STUB)
-// =============================================================================
-bool backprop_gpu([[maybe_unused]] execution_node_t *node) {
-    assert(node != NULL);
-    assert(node->t != NULL);
-    // TODO: Implement GPU backward kernels
-    debug("backprop_gpu: not yet implemented, falling back\n");
-    return false;
-}
+
+/// GPU DISPATCHER lives here  src/backend_gpu/backprop/backprop_gpu.cu :: backprop_gpu_dispatch().
+
+
 // TODO: ONE PROBLEM IS WE NEED MULTIPLE CASE FOR 
 bool tensor_grad_op_add(execution_node_t *node) {
     tensor_t *out_grad = node->t->grad;
