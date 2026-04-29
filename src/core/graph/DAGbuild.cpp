@@ -33,6 +33,10 @@ bool verifyIfDAG(tensor_pool_t *pool, tensor_t *t, std::vector<execution_node_t 
     en->id = id;
     en->to_device_needed = false;
     en->device_ptr = NULL;
+    en->device_ptr_grad = NULL;
+    en->backend_fn = NULL;
+    en->parent_pos[0] = -1;
+    en->parent_pos[1] = -1;
     seq.push_back(en);
     return true;
 }
