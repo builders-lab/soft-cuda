@@ -24,4 +24,10 @@
 
 #include "backend_gpu/include/math/add.h"
 #include "backend_gpu/include/math/matmul.h"
+#include "backend_gpu/include/math/sub.h"
+#include "backend_gpu/include/math/relu.h"
+#include "backend_gpu/include/math/square.h"
+#include "backend_gpu/include/math/mean.h"
+#include "backend_gpu/include/math/scalar_mul.h"
+#include "backend_gpu/include/math/broadcast_add.h"
 // clang-format on

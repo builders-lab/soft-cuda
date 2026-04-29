@@ -101,6 +101,7 @@ tensor_t *tensor_dtype_create(tensor_pool_t *pool, tensor_dtype_t dtype, uint32_
     t->device = device_type::CPU;
     t->grad_compute = grad_status;
     t->is_transposed = false;
+    t->grad = NULL;
     // Return success
     return t;
 }
@@ -190,7 +191,8 @@ bool tensor_evaluate(tensor_pool_t *pool, tensor_t *t,  [[maybe_unused]]float *d
 /*************************************************************/
 /*************************************************************/
 // TODO: Implement GPU module
-bool tensor_evaluate_GPU([[maybe_unused]] tensor_pool_t *pool, [[maybe_unused]]tensor_t *t,  [[maybe_unused]]float *d_a, [[maybe_unused]]float *d_b, [[maybe_unused]]float *d_res) {
+bool tensor_evaluate_GPU(tensor_pool_t *pool, tensor_t *t,
+                          float *d_a, float *d_b, float *d_res) {
     assert(pool != NULL);
     assert(t != NULL);
     bool success = false;
@@ -201,37 +203,64 @@ bool tensor_evaluate_GPU([[maybe_unused]] tensor_pool_t *pool, [[maybe_unused]]t
         break;
     case tensor_op_t::CAST:
         break;
-        // TODO: Implement here
     case tensor_op_t::ADD:
-        assert(t->a != NULL);
-        assert(t->b != NULL);
-        assert(t->a->dtype == t->b->dtype);
+        assert(t->a != NULL && t->b != NULL);
         success = tensor_add_op_cuda(t, d_a, d_b, d_res);
         break;
-    case tensor_op_t::MUL_MATRIX:
+    case tensor_op_t::SUB:
+        assert(t->a != NULL && t->b != NULL);
+        success = tensor_sub_op_cuda(t, d_a, d_b, d_res);
+        break;
+    case tensor_op_t::RELU:
         assert(t->a != NULL);
-        assert(t->b != NULL);
-        assert(t->a->dtype == t->b->dtype);
+        success = tensor_relu_op_cuda(t, d_a, d_res);
+        break;
+    case tensor_op_t::SQUARE:
+        assert(t->a != NULL);
+        success = tensor_square_op_cuda(t, d_a, d_res);
+        break;
+    case tensor_op_t::MEAN:
+        assert(t->a != NULL);
+        success = tensor_mean_op_cuda(t, d_a, d_res);
+        break;
+    case tensor_op_t::MUL_MATRIX:
+        assert(t->a != NULL && t->b != NULL);
         success = tensor_mul_op_cuda(t, d_a, d_b, d_res);
         break;
-    default:
-        // We are having a stopgap where if we have not written that op on GPU then CPU will handle it
-        std::cout << "OP NOT AVAILABLE FOR GPU SWITCHING TO CPU\n";
+    case tensor_op_t::NAIVE_MATRIX_MUL:
+        assert(t->a != NULL && t->b != NULL);
+        success = tensor_mul_op_cuda(t, d_a, d_b, d_res);
+        break;
+    case tensor_op_t::MUL_SCALAR:
+        assert(t->a != NULL && t->b != NULL);
+        success = tensor_scalar_mul_op_cuda(t, d_a, d_b, d_res);
+        break;
+    case tensor_op_t::BROADCAST_ADD:
+        assert(t->a != NULL && t->b != NULL);
+        success = tensor_broadcast_add_op_cuda(t, d_a, d_b, d_res);
+        break;
+    case tensor_op_t::TRANSPOSE:
+        // Transpose on GPU: fall back to CPU with a single round-trip.
+        // Transpose is an O(n) copy the overhead is acceptable.
+        // Cause don't know how to do transpose on GPU lol
         if (t->a != nullptr && d_a != nullptr) {
-            cudaMemcpy(t->a->data, d_a, t->a->nvalues * sizeof(float), cudaMemcpyDeviceToHost);
+            cudaMemcpy(t->a->data, d_a,
+                       t->a->nvalues * sizeof(float), cudaMemcpyDeviceToHost);
         }
-        if (t->b != nullptr && d_b != nullptr) {
-            cudaMemcpy(t->b->data, d_b, t->b->nvalues * sizeof(float), cudaMemcpyDeviceToHost);
-        }
-        success = tensor_evaluate(pool, t, d_a, d_b, d_res);
+        success = tensor_tranpose_op_matrix(pool, t);
         if (success && d_res != nullptr) {
-            cudaMemcpy(d_res, t->data, t->nvalues * sizeof(float), cudaMemcpyHostToDevice);
+            cudaMemcpy(d_res, t->data,
+                       t->nvalues * sizeof(float), cudaMemcpyHostToDevice);
         }
-}
+        break;
+    default:
+        debug("tensor_evaluate_GPU: unhandled op=%d\n", (int)t->op);
+        success = false;
+    }
     if (success) {
-        debug("tensor_evaluate_GPU: success\n");
+        debug("tensor_evaluate_GPU: success op=%d\n", (int)t->op);
     } else {
-        debug("tensor_evaluate_GPU: FUBAR\n");
+        debug("tensor_evaluate_GPU: FUBAR op=%d\n", (int)t->op);
     }
     return success;
 }
