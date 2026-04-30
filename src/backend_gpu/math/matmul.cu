@@ -65,8 +65,9 @@ bool tensor_mul_op_cuda(tensor_t *t, float *d_a, float *d_b, float *d_res) {
         debug("tensor_mul_op_cuda: cublasSgemm failed (%d)\n", (int)stat);
         return false;
     }
+    cudaError_t err = cudaGetLastError();
 
-    cudaError_t err = cudaDeviceSynchronize();
+
     if (err != cudaSuccess) {
         debug("CUDA Matmul Kernel Failed: %s\n", cudaGetErrorString(err));
         return false;

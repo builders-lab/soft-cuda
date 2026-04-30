@@ -13,7 +13,7 @@ bool tensor_sub_op_cuda(tensor_t *t, float *d_a, float *d_b, float *d_res) {
     int block = 256;
     int grid  = ((int)t->nvalues + block - 1) / block;
     sub_kernel<<<grid, block>>>(d_a, d_b, d_res, t->nvalues);
-    cudaError_t err = cudaDeviceSynchronize();
+    cudaError_t err = cudaGetLastError();
     if (err != cudaSuccess) {
         debug("CUDA Sub Kernel Failed: %s\n", cudaGetErrorString(err));
         return false;

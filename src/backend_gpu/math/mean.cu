@@ -67,7 +67,7 @@ bool tensor_mean_op_cuda(tensor_t *t, float *d_a, float *d_res) {
     cudaFree(d_partial);
     cudaFree(d_partial2);
 
-    cudaError_t err = cudaDeviceSynchronize();
+    cudaError_t err = cudaGetLastError();
     if (err != cudaSuccess) {
         debug("CUDA Mean Kernel Failed: %s\n", cudaGetErrorString(err));
         return false;

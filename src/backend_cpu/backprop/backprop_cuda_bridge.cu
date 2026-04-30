@@ -3,7 +3,7 @@
 #include <cassert>
 
 void soft_cuda_memset_zero(void *ptr, size_t bytes) {
-    cudaMemset(ptr, 0, bytes);
+    if (ptr) cudaMemsetAsync(ptr, 0, bytes);
 }
 
 void soft_cuda_memcpy_h2d(void *dst, const void *src, size_t bytes) {
