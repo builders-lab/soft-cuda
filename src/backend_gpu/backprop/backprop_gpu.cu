@@ -306,7 +306,7 @@ bool backprop_gpu_dispatch(execution_node_t *node,
         return false;
     }
 
-    err = cudaDeviceSynchronize();
+    err = cudaGetLastError();
     if (err != cudaSuccess) {
         debug("backprop_gpu_dispatch: CUDA error: %s\n", cudaGetErrorString(err));
         return false;
@@ -325,6 +325,6 @@ extern "C" bool tensor_sgd_gpu(float *d_w, float *d_g, float lr, uint32_t n) {
     int block = 256;
     int grid = ((int)n + block - 1) / block;
     gpu_sgd_k<<<grid, block>>>(d_w, d_g, lr, n);
-    return cudaDeviceSynchronize() == cudaSuccess;
+    return cudaGetLastError() == cudaSuccess;
 }
 
