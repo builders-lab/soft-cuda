@@ -17,7 +17,13 @@ bool tensor_scalar_mul_op_cuda(tensor_t *t, float *d_a,
     int block = 256;
     int grid  = ((int)t->nvalues + block - 1) / block;
     scalar_mul_kernel<<<grid, block>>>(d_a, d_res, s, t->nvalues);
-  cudaError_t err = cudaGetLastError();
+cudaError_t err = cudaSuccess;
+
+#ifdef SC_DEBUG
+    err = cudaDeviceSynchronize();
+#else
+    err = cudaGetLastError();
+#endif
     if (err != cudaSuccess) {
         debug("CUDA ScalarMul Kernel Failed: %s\n", cudaGetErrorString(err));
         return false;
