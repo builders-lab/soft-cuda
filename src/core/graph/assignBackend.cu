@@ -38,40 +38,79 @@ void assignBackendGpu(execution_node_t *e) {
 /* NOTE: Remember that when op is  tensor_op_t::NONE you assign it to CPU,
  *       The reason being that it would the dangling node.
  */
-device_type assignDevice([[maybe_unused]] uint8_t ndims, [[maybe_unused]] uint32_t *dims,
-                         [[maybe_unused]] tensor_op_t op, uint32_t nvalues, json &data) {
-    if(op == tensor_op_t::NONE) {
-        return device_type::CPU;
-    }
-    try {
+/* -------------------------------------------------------------------------
+ * assignDevice  — looks up the CONFIG.soft JSON and returns the best
+ * backend for the given op and tensor size.
+ *
+ * JSON schema per op:
+ *   "op_name": [
+ *     { "min": 0, "max": 127, "backend": "cpu" },
+ *     { "min": 128, "max": 4294967295, "backend": "cuda" }
+ *   ]
+ *   OR
+ *   { "backend": "cuda" }  (no size range — always this backend)
+ *
+ * Returns device_type::CPU if:
+ *   • op is NONE (leaf node)
+ *   • op key not found in JSON
+ *   • no matching size range
+ * ---------------------------------------------------------------------*/
+device_type assignDevice([[maybe_unused]] uint8_t ndims,
+                         [[maybe_unused]] uint32_t *dims,
+                         tensor_op_t op, uint32_t nvalues, json &data) {
+    if (op == tensor_op_t::NONE) return device_type::CPU;
 
-        if (op == tensor_op_t::MUL_MATRIX) {
-            auto params = data["ops"]["matmul"];
-            for(auto param: params) {
-                if(param["min"] <= nvalues && param["max"] > nvalues) {
-                    if(param["backend"] == "cpu") {
-                        return device_type::CPU;
-                    } else {
-                        return device_type::GPU;
-                    }
-                }
-            }
-        }
-        if (op == tensor_op_t::ADD) {
-            auto params = data["ops"]["add"];
-            for(auto param: params) {
-                if(!param.contains("min") || (param["min"] <= nvalues && param["max"] > nvalues)) {
-                    if(param["backend"] == "cpu") {
-                        return device_type::CPU;
-                    } else {
-                        return device_type::GPU;
-                    }
-                }
-            }
-        }
-    } catch (const std::exception& e) {
-       debug("Error: %s\n", e.what());
+    const char *key = nullptr;
+    switch (op) {
+        case tensor_op_t::ADD:              key = "add";           break;
+        case tensor_op_t::SUB:              key = "sub";           break;
+        case tensor_op_t::RELU:             key = "relu";          break;
+        case tensor_op_t::SQUARE:           key = "square";        break;
+        case tensor_op_t::MEAN:             key = "mean";          break;
+        case tensor_op_t::MUL_MATRIX:       key = "matmul";        break;
+        case tensor_op_t::NAIVE_MATRIX_MUL: key = "matmul";        break;
+        case tensor_op_t::MUL_SCALAR:       key = "mul_scalar";    break;
+        case tensor_op_t::BROADCAST_ADD:    key = "broadcast_add"; break;
+        case tensor_op_t::TRANSPOSE:        // always CPU         return device_type::CPU;
+        default:                                                    return device_type::CPU;
     }
+
+    try {
+        if (!data.contains("ops") || !data["ops"].contains(key))
+            return device_type::CPU;
+
+        auto &params = data["ops"][key];
+
+        // params may be an array of range objects or a single object 
+        auto lookup = [&](const json &entry) -> device_type {
+            bool in_range = !entry.contains("min") ||
+                            (entry["min"].get<uint32_t>() <= nvalues &&
+                             entry["max"].get<uint32_t>() > nvalues);
+            if (!in_range) return device_type::CPU; // sentinel — skip 
+            return (entry["backend"] == "cpu") ? device_type::CPU
+                                               : device_type::GPU;
+        };
+
+        if (params.is_array()) {
+            for (auto &p : params) {
+                if (p.contains("min") &&
+                    p["min"].get<uint32_t>() <= nvalues &&
+                    p["max"].get<uint32_t>() > nvalues) {
+                    return (p["backend"] == "cpu") ? device_type::CPU
+                                                   : device_type::GPU;
+                } else if (!p.contains("min")) {
+                    // No range -> applies to all sizes
+                    return (p["backend"] == "cpu") ? device_type::CPU
+                                                   : device_type::GPU;
+                }
+            }
+        } else if (params.is_object()) {
+            return lookup(params);
+        }
+    } catch (const std::exception &e) {
+        debug("assignDevice: JSON error: %s\n", e.what());
+    }
+
     return device_type::CPU;
 }
 
@@ -154,9 +193,9 @@ void assignBackendGraph(tensor_pool_t *pool,std::vector<execution_node_t *> &nod
         }
     } else if (backend == backend_mode::HYBRID) {
         json data{};
-        std::string path{};
+        std::string path = ".config/soft-cuda/CONFIG.soft";
         if (getenv("HOME") != nullptr) {
-            static std::string path = std::string(getenv("HOME")) + "/.config/soft-cuda/CONFIG.soft";
+            path = std::string(getenv("HOME")) + "/" + path;
         }
         if (std::filesystem::exists(path)) {
             data = readJsonToMap(path); // passing the char pointer
@@ -176,6 +215,11 @@ changedToGPU:
             // TODO: How to get access to the execution_node place in graph when we just know the
             // tensor
             assignPlaceOnDeviceMemory(pool, (int32_t)(node->pos), nodes);
+            if (node->device_ptr == NULL) {
+                // If allocation failed, fall back to CPU
+                assignBackendCpu(node);
+                continue;
+            }
             if (node->t->a == NULL)
                 goto trp;
             if (node->t->a->device == device_type::CPU) {
@@ -244,7 +288,7 @@ bool tensor_graph_forward_evaluate(tensor_pool_t *pool_cpu, tensor_pool_t *pool_
 
                 // NOTE: we are totally ignoring the to_device_needed flag am i missing something which i thought i needed.
                 // TODO: Review this part once again maybe try for streams for better performance or whatever
-                if (parent_a->t->device == device_type::CPU) {
+                if (parent_a->t->device == device_type::CPU && parent_a->device_ptr != NULL) {
                     size_t size_a = nodes[(size_t)a_idx]->t->nvalues * sizeof(float) ;
                     cudaError_t err_a = cudaMemcpy(parent_a->device_ptr, parent_a->t->data, size_a, cudaMemcpyHostToDevice);
                     if (err_a != cudaSuccess) {
@@ -256,7 +300,7 @@ bool tensor_graph_forward_evaluate(tensor_pool_t *pool_cpu, tensor_pool_t *pool_
             int32_t b_idx = getTheExecutionNodeIndex(node, 1);
             if(b_idx != -1){
                 auto parent_b = nodes[(size_t)b_idx];
-                if (parent_b->t->device == device_type::CPU) {
+                if (parent_b->t->device == device_type::CPU && parent_b->device_ptr != NULL) {
                     size_t size_b = nodes[(size_t)b_idx]->t->nvalues * sizeof(float) ;
                     cudaError_t err_b = cudaMemcpy(parent_b->device_ptr, parent_b->t->data, size_b, cudaMemcpyHostToDevice);
                     if (err_b != cudaSuccess) {
@@ -332,15 +376,30 @@ void assignGradMemory(tensor_pool_t *pool_grad_cpu, tensor_pool_t *pool_grad_gpu
         // So we are going to make a tensor instance here and assign it here i guess. 
         
         if(node->t->grad_compute == false) continue;
-
-        node->t->grad =  tensor_dtype_create(pool_grad_cpu, node->t->dtype, node->t->ndims, node->t->dims, NULL);
-
+        node->t->grad = tensor_dtype_create(pool_grad_cpu, node->t->dtype, node->t->ndims, node->t->dims, NULL);
         if(node->backend_fn == tensor_evaluate_GPU) {
-            size_t size = node->t->nvalues * sizeof(float) ;
+            size_t size = node->t->nvalues * sizeof(float);
             uint32_t id;
             node->device_ptr_grad = tensor_pool_alloc(pool_grad_gpu, size, &id);
         }
     }
+
+    for (int i = (int)nodes.size() - 1; i >= 0; i--) {
+        execution_node_t *node = nodes[i];
+        if (node->device_ptr_grad == NULL) continue;
+
+        for (int p = 0; p < 2; p++) {
+            int32_t p_idx = getTheExecutionNodeIndex(node, p);
+            if (p_idx == -1) continue;
+            execution_node_t *parent = nodes[p_idx];
+            if (parent->t->grad_compute && parent->device_ptr_grad == NULL) {
+                size_t size = parent->t->nvalues * sizeof(float);
+                uint32_t id;
+                parent->device_ptr_grad = tensor_pool_alloc(pool_grad_gpu, size, &id);
+            }
+        }
+    }
+
 }
 
 // Since autograd is not ready I am making two function one for device to host copy and one which iterate over graph and transfer them back to cpu
@@ -354,11 +413,9 @@ void autogradGpuMemTranfer(std::vector<execution_node_t *> &nodes) {
     for(auto node : nodes) {
         if (node->backend_fn == tensor_evaluate_GPU) {
             // cause we do implict fallback to cpu in case we don't have that op on gpu
-            if (node->t->data == NULL) {
+            if (node->t->grad_compute && node->t->data != NULL) {
                 fromDeviceToHost(node);
             }
-            // Not doing backend_fn mutation cause then we will have to run assignBackend again and again
-            node->device_ptr_grad = NULL;
         }
     } 
 }

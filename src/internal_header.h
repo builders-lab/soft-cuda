@@ -3,6 +3,7 @@
 #include "../include/soft-cuda/tensor/api.h"
 #include "../include/soft-cuda/tensor/debug_api.h"
 #include "../include/soft-cuda/python/soft_cuda_python.h"
+#include "../include/soft-cuda/profiler/profiler_core.h"
 
 // PRIVATE DECLARATIONS
 #include "./core/include/tensor/tensor.h"
@@ -30,4 +31,5 @@
 #include "backend_gpu/include/math/mean.h"
 #include "backend_gpu/include/math/scalar_mul.h"
 #include "backend_gpu/include/math/broadcast_add.h"
+#include "backend_gpu/include/backprop/backprop_gpu.h"
 // clang-format on

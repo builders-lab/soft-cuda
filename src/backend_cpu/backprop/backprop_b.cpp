@@ -1,6 +1,4 @@
 #include "internal_header.h"
-
-
 // We are gonna write a backprop fucntion for matmul cause that is easy thing to do
 // Since our backprop is an eagar evaluation we will make tensor objects inside the function
 // transpose it execute it as well and then work with it
@@ -9,40 +7,93 @@
 // Since we are going to get execution node we could have a decision made here if it's data will be
 // written on device_ptr of node_.grad->data
 // We are gonna do this cause making decsion on higher level will require us to make two kernels for similar work.
+/// @brief Initializes the gradient buffers for a list of execution nodes.
+/// @param nodes A vector of pointers to execution nodes.
 void gradInitializer(std::vector<execution_node_t *> &nodes) {
     for (auto &node : nodes) {
         if (!node->t->grad_compute) continue;
-        memset(node->t->grad->data, 0,node->t->grad->nvalues * sizeof(float));
-        // TODO: We are not zeroing the GPU will have to do that
+        // Zero CPU grad buffer
+        memset(node->t->grad->data, 0, node->t->grad->nvalues * sizeof(float));
+        // Zero GPU grad buffer if it exists
+        if (node->device_ptr_grad != NULL) {
+            soft_cuda_memset_zero(node->device_ptr_grad, node->t->nvalues * sizeof(float));
+        }
     }
+    // Seed the root node's gradient = 1 (dL/dL = 1)
     if (!nodes.empty()) {
         execution_node_t *root = nodes.back();
-        if (root->t != nullptr && root->t->grad != nullptr && root->t->grad->data != nullptr) {
-            ((float*)root->t->grad->data)[0] = 1.0f;
+        if (root->t != nullptr && root->t->grad != nullptr &&
+            root->t->grad->data != nullptr) {
+            ((float *)root->t->grad->data)[0] = 1.0f;
+            // If root is on GPU, seed its GPU grad buffer too
+            if (root->device_ptr_grad != NULL) {
+                float one = 1.0f;
+                soft_cuda_memcpy_h2d(root->device_ptr_grad, &one, sizeof(float));
+            }
         }
     }
 }
-// Since this will be eagar evalution we are gonna execute it here now and we are gonna return a
-// boolean.
-// @return: boolean
-// @params: execution_node_t
-// Since all the memory is already executed we just need the execution node
 
+/// @brief Executes the backward pass (backpropagation) across a list of execution nodes.
+/// @param nodes A vector of pointers to execution nodes in forward execution order.
+/// @return true if backpropagation was successful for all nodes, false otherwise.
 bool backprop__(std::vector<execution_node_t *> &nodes) {
     for (int i = (int)nodes.size() - 1; i >= 0; i--) {
         execution_node_t *node = nodes[(size_t)i];
-        // Cause it's not needed
-        if (!node->t->grad_compute)
-            continue;
-        // Cause it's super child
-        if (node->t->op == tensor_op_t::NONE)
-            continue;
-        bool success{false};
+        if (!node->t->grad_compute) continue;
+        if (node->t->op == tensor_op_t::NONE) continue;
+
+        bool success = false;
+
         if (node->device_ptr_grad != NULL) {
-            success = backprop_gpu(node);
+            // Resolve parent execution nodes for the GPU backward kernels
+            execution_node_t *parent_a = nullptr;
+            execution_node_t *parent_b = nullptr;
+            int32_t a_idx = getTheExecutionNodeIndex(node, 0);
+            int32_t b_idx = getTheExecutionNodeIndex(node, 1);
+            if (a_idx >= 0) parent_a = nodes[(size_t)a_idx];
+            if (b_idx >= 0) parent_b = nodes[(size_t)b_idx];
+
+            success = backprop_gpu_dispatch(node, parent_a, parent_b);
+            if (!success) {
+                // Graceful fallback: copy grad from GPU, run CPU backward
+                debug("backprop__: GPU backward unsupported for op=%d, falling back to CPU\n",
+                      (int)node->t->op);
+                // Pull this node's grad from GPU to CPU
+                if (node->device_ptr_grad != NULL && node->t->grad != NULL) {
+                    soft_cuda_memcpy_d2h(node->t->grad->data, node->device_ptr_grad,
+                                         node->t->grad->nvalues * sizeof(float));
+                }
+                // Pull parent forward data from GPU if needed
+                if (parent_a && parent_a->device_ptr != NULL &&
+                    parent_a->t->device == device_type::GPU) {
+                    soft_cuda_memcpy_d2h(parent_a->t->data, parent_a->device_ptr,
+                                         parent_a->t->nvalues * sizeof(float));
+                }
+                if (parent_b && parent_b->device_ptr != NULL &&
+                    parent_b->t->device == device_type::GPU) {
+                    soft_cuda_memcpy_d2h(parent_b->t->data, parent_b->device_ptr,
+                                         parent_b->t->nvalues * sizeof(float));
+                }
+                success = backprop_cpu(node);
+                // Push parent grads back to GPU so SGD sees them
+                if (parent_a && parent_a->device_ptr_grad != NULL &&
+                    parent_a->t->grad != NULL) {
+                    soft_cuda_memcpy_h2d(parent_a->device_ptr_grad,
+                                         parent_a->t->grad->data,
+                                         parent_a->t->grad->nvalues * sizeof(float));
+                }
+                if (parent_b && parent_b->device_ptr_grad != NULL &&
+                    parent_b->t->grad != NULL) {
+                    soft_cuda_memcpy_h2d(parent_b->device_ptr_grad,
+                                         parent_b->t->grad->data,
+                                         parent_b->t->grad->nvalues * sizeof(float));
+                }
+            }
         } else {
             success = backprop_cpu(node);
         }
+
         if (!success) {
             debug("backprop__: FUBAR at node pos=%d\n", (int)node->pos);
             return false;
@@ -55,6 +106,9 @@ bool backprop__(std::vector<execution_node_t *> &nodes) {
 // CPU BACKWARD DISPATCHER
 // ================================================================================ 
 
+/// @brief CPU backward dispatcher. Dispatches to the appropriate CPU gradient operation based on the node's tensor operation.
+/// @param node Pointer to the execution node.
+/// @return true if the backward operation was successful, false otherwise.
 bool backprop_cpu(execution_node_t *node) {
     assert(node != NULL);
     assert(node->t != NULL);
@@ -69,12 +123,12 @@ bool backprop_cpu(execution_node_t *node) {
         // TODO: Implement here
         success = false;
         break;
-    // case tensor_op_t::MUL_MATRIX:
-    //     assert(node->t->a != NULL);
-    //     assert(node->t->b != NULL);
-    //     assert(node->t->a->dtype == node->t->b->dtype);
-    //     success = tensor_mul_grad_op_matrix(node);
-    //     break;
+    case tensor_op_t::MUL_MATRIX:
+        assert(node->t->a != NULL);
+        assert(node->t->b != NULL);
+        assert(node->t->a->dtype == node->t->b->dtype);
+        success = tensor_mul_grad_op_matrix(node);
+        break;
     case tensor_op_t::MUL_SCALAR:
         assert(node->t->a != NULL);
         assert(node->t->b != NULL);
@@ -132,17 +186,19 @@ bool backprop_cpu(execution_node_t *node) {
     return success;
 }
 
-// =============================================================================
-// GPU BACKWARD DISPATCHER (STUB)
-// =============================================================================
-bool backprop_gpu([[maybe_unused]] execution_node_t *node) {
-    assert(node != NULL);
-    assert(node->t != NULL);
-    // TODO: Implement GPU backward kernels
-    debug("backprop_gpu: not yet implemented, falling back\n");
-    return false;
-}
+// backprop_gpu() is no longer used directly.
+// The full GPU backward implementation lives in
+// src/backend_gpu/backprop/backprop_gpu.cu :: backprop_gpu_dispatch().
+// backprop__() above calls backprop_gpu_dispatch(node, parent_a, parent_b).
+//
+// This stub is kept so any legacy call sites get a linker error rather than
+// silent incorrect behavior.
+// (removed stub)
 // TODO: ONE PROBLEM IS WE NEED MULTIPLE CASE FOR 
+
+/// @brief Computes the gradient for element-wise addition operation.
+/// @param node Pointer to the execution node.
+/// @return true if successful.
 bool tensor_grad_op_add(execution_node_t *node) {
     tensor_t *out_grad = node->t->grad;
     tensor_t *a = node->t->a;
@@ -161,6 +217,9 @@ bool tensor_grad_op_add(execution_node_t *node) {
     return true;
 }
 
+/// @brief Computes the gradient for element-wise broadcasting addition operation.
+/// @param node Pointer to the execution node.
+/// @return true if successful.
 bool tensor_grad_op_broadcasting_add(execution_node_t *node) {
     tensor_t *out_grad = node->t->grad;
     tensor_t *a = node->t->a;
@@ -193,6 +252,9 @@ bool tensor_grad_op_broadcasting_add(execution_node_t *node) {
     return true;
 }
 
+/// @brief Computes the gradient for element-wise subtraction operation.
+/// @param node Pointer to the execution node.
+/// @return true if successful.
 bool tensor_grad_op_sub(execution_node_t *node) {
     tensor_t *out_grad = node->t->grad;
     tensor_t *a        = node->t->a;
@@ -213,6 +275,9 @@ bool tensor_grad_op_sub(execution_node_t *node) {
 
 
 
+/// @brief Computes the gradient for the ReLU activation function.
+/// @param node Pointer to the execution node.
+/// @return true if successful.
 bool tensor_grad_op_relu(execution_node_t *node) {
     tensor_t *out_grad = node->t->grad;
     tensor_t *a        = node->t->a;
@@ -233,6 +298,9 @@ bool tensor_grad_op_relu(execution_node_t *node) {
     return true;
 }
 
+/// @brief Computes the gradient for the mean operation.
+/// @param node Pointer to the execution node.
+/// @return true if successful.
 bool tensor_grad_op_mean(execution_node_t *node) {
     tensor_t *out_grad = node->t->grad;
     tensor_t *a        = node->t->a;
@@ -252,6 +320,9 @@ bool tensor_grad_op_mean(execution_node_t *node) {
     return true;
 }
 
+/// @brief Computes the gradient for scalar multiplication operation.
+/// @param node Pointer to the execution node.
+/// @return true if successful.
 bool tensor_mul_grad_op_scalar(execution_node_t *node) {
     tensor_t *out_grad = node->t->grad;
     tensor_t *a        = node->t->a;
@@ -272,6 +343,9 @@ bool tensor_mul_grad_op_scalar(execution_node_t *node) {
 }
 
 
+/// @brief Computes the gradient for matrix transpose operation.
+/// @param node Pointer to the execution node.
+/// @return true if successful.
 bool tensor_tranpose_grad_op_matrix(execution_node_t *node) {
     tensor_t *out_grad = node->t->grad;
     tensor_t *a        = node->t->a;
@@ -292,6 +366,9 @@ bool tensor_tranpose_grad_op_matrix(execution_node_t *node) {
     return true;
 }
 
+/// @brief Computes the gradient for naive matrix multiplication operation.
+/// @param node Pointer to the execution node.
+/// @return true if successful.
 bool tensor_mul_grad_op_matrix_naive(execution_node_t *node) {
     tensor_t *out_grad = node->t->grad;
     tensor_t *a        = node->t->a;
@@ -336,6 +413,9 @@ bool tensor_mul_grad_op_matrix_naive(execution_node_t *node) {
     return true;
 }
 
+/// @brief Computes the gradient for element-wise square operation.
+/// @param node Pointer to the execution node.
+/// @return true if successful.
 bool tensor_grad_op_square(execution_node_t *node) {
     tensor_t *out_grad = node->t->grad;
     tensor_t *a        = node->t->a;
