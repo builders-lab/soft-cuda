@@ -99,7 +99,7 @@ static void bench_matmul() {
     header("Benchmark 2: Matmul 4096×4096");
 
     const uint32_t M = 4096, K = 4096, N = 4096;
-    const uint32_t total_flops = 2 * M * K * N;  
+    const size_t total_flops = (size_t)2 * M * K * N;  
     float *A = new float[M * K];
     float *B = new float[K * N];
     for (uint32_t i = 0; i < M*K; i++) A[i] = (float)i * 0.001f;

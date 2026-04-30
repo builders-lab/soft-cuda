@@ -22,7 +22,16 @@ bool tensor_broadcast_add_op_cuda(tensor_t *t, float *d_a, float *d_b,
     int block = 256;
     int grid  = ((int)total + block - 1) / block;
     broadcast_add_kernel<<<grid, block>>>(d_a, d_b, d_res, rows, cols);
-    cudaError_t err = cudaDeviceSynchronize();
+
+cudaError_t err = cudaSuccess;
+
+#ifdef SC_DEBUG
+    err = cudaDeviceSynchronize();
+#else
+    err = cudaGetLastError();
+#endif
+
+
     if (err != cudaSuccess) {
         debug("CUDA BroadcastAdd Kernel Failed: %s\n", cudaGetErrorString(err));
         return false;
